@@ -1,0 +1,72 @@
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cb-postgres
+    environment:
+      POSTGRES_DB:       communitybot
+      POSTGRES_USER:     communitybot
+      POSTGRES_PASSWORD: communitybot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U communitybot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cb-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: cb-minio
+    environment:
+      MINIO_ROOT_USER:     minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  clamav:
+    image: clamav/clamav:stable
+    platform: linux/amd64   # no arm64 image; Rosetta 2 emulates it on Apple Silicon
+    container_name: cb-clamav
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    # First startup downloads signature DB (~200 MB); can take a few minutes
+    healthcheck:
+      test: ["CMD", "clamdcheck"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  pg_data:
+  redis_data:
+  minio_data:
+  clamav_data:

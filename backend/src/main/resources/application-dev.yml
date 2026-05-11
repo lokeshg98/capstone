@@ -1,0 +1,39 @@
+# ─── Dev profile overrides ────────────────────────────────────────────────────
+# Activate with: SPRING_PROFILES_ACTIVE=dev  (or -Dspring.profiles.active=dev)
+# Copy infra/.env.example → infra/.env and set real OAuth credentials there.
+
+spring:
+  jpa:
+    show-sql: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id:     ${GOOGLE_CLIENT_ID:dev-placeholder-google-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dev-placeholder-google-secret}
+          github:
+            client-id:     ${GITHUB_CLIENT_ID:dev-placeholder-github-id}
+            client-secret: ${GITHUB_CLIENT_SECRET:dev-placeholder-github-secret}
+
+# Dev-only JWT secret — 64 bytes Base64. NEVER use in production.
+app:
+  jwt:
+    secret: ZGV2U2VjcmV0S2V5Rm9yTG9jYWxEZXZlbG9wbWVudE9ubHlEb05vdFVzZUluUHJvZA==
+  clamav:
+    # Set to true when ClamAV container is running (docker-compose up clamav).
+    # First start is slow — ClamAV downloads ~300 MB of virus signatures.
+    enabled: false
+  openai:
+    # Set OPENAI_API_KEY env var (or override here for local dev only — never commit a real key!)
+    # api-key: sk-proj-...
+  moderation:
+    # Disable auto-classification in dev to avoid OpenAI cost on every message.
+    # Set to true when demoing the moderation pipeline.
+    classification-enabled: false
+
+logging:
+  level:
+    com.communitybot:             DEBUG
+    org.springframework.security: DEBUG

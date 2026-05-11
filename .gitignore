@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# VS Code
+.vscode/
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+backend/src/main/resources/application-local.yml
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dev.sh log output
+.dev-logs/
+
+# Generated Gradle wrapper binary (auto-created by dev.sh on first run)
+gradle/wrapper/gradle-wrapper.jar
