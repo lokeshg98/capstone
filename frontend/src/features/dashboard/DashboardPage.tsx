@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/useAuthStore';
 import { logout } from '@/features/auth/authApi';
 import { fetchMyOrgs, createOrg, type OrgResponse } from './orgApi';
-import { fetchWorkspaces } from '@/features/workspace/workspaceApi';
+import { fetchWorkspaces, createWorkspace } from '@/features/workspace/workspaceApi';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
@@ -73,12 +73,14 @@ function OrgList({ orgs }: { orgs: OrgResponse[] }) {
 
   const openOrg = async (org: OrgResponse) => {
     try {
-      const workspaces = await fetchWorkspaces(org.id);
-      if (workspaces.length > 0) {
-        navigate(`/workspaces/${workspaces[0].id}`);
+      let workspaces = await fetchWorkspaces(org.id);
+      if (workspaces.length === 0) {
+        const ws = await createWorkspace(org.id, { name: 'General' });
+        workspaces = [ws];
       }
+      navigate(`/workspaces/${workspaces[0].id}`);
     } catch {
-      // If no workspaces yet, stay on dashboard (user can create one later)
+      // silently ignore — backend may be down
     }
   };
 

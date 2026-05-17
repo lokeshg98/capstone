@@ -17,6 +17,17 @@ export async function fetchWorkspaces(orgId: string): Promise<WorkspaceResponse[
   return res.data.data;
 }
 
+export async function createWorkspace(
+  orgId: string,
+  payload: { name: string; description?: string },
+): Promise<WorkspaceResponse> {
+  const res = await api.post<{ ok: boolean; data: WorkspaceResponse }>(
+    `/organizations/${orgId}/workspaces`,
+    payload,
+  );
+  return res.data.data;
+}
+
 export async function joinWorkspace(orgId: string, wsId: string): Promise<WorkspaceResponse> {
   const res = await api.post<{ ok: boolean; data: WorkspaceResponse }>(
     `/organizations/${orgId}/workspaces/${wsId}/join`,
