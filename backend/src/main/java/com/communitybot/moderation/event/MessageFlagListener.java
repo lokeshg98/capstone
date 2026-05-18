@@ -48,7 +48,7 @@ public class MessageFlagListener {
         if (event.body().length() < 10)    return;   // too short to classify meaningfully
 
         try {
-            ClassificationResult result = classifier.classify(event.body());
+            ClassificationResult result = classifier.classify(event.body(), event.authorId());
             log.debug("Classification: msgId={} safe={} reason={} confidence={:.2f}",
                     event.messageId(), result.safe(), result.flagReason(), result.confidence());
 

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/features/auth/useAuthStore';
 import { logout } from '@/features/auth/authApi';
 import { fetchMyOrgs, createOrg, type OrgResponse } from './orgApi';
 import { fetchWorkspaces, createWorkspace } from '@/features/workspace/workspaceApi';
+import { AiUsageSummary } from './AiUsageSummary';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
@@ -53,6 +54,8 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Your Organisations</h1>
           <CreateOrgButton onCreated={() => qc.invalidateQueries({ queryKey: ['orgs'] })} />
         </div>
+
+        <AiUsageSummary />
 
         {isLoading ? (
           <OrgListSkeleton />

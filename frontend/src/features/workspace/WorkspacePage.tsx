@@ -8,6 +8,7 @@ import AskBotPanel from '@/features/documents/AskBotPanel';
 import ModerationDashboard from '@/features/moderation/ModerationDashboard';
 import WorkspaceSettings from './WorkspaceSettings';
 import { cn } from '@/lib/utils';
+import { AiUsageSummary } from '@/features/dashboard/AiUsageSummary';
 
 type ActiveView =
   | { kind: 'channel'; channelId: string }
@@ -190,7 +191,9 @@ function WorkspaceSidebar({
       </div>
 
       {/* Utility entries pinned to the bottom of the sidebar */}
-      <div className="shrink-0 border-t border-gray-700 p-2 space-y-1">
+      <div className="shrink-0 border-t border-gray-700 flex flex-col">
+        <AiUsageSummary variant="sidebar" />
+        <div className="p-2 space-y-1">
         <button
           onClick={onAskBotClick}
           className={cn(
@@ -221,6 +224,7 @@ function WorkspaceSidebar({
           <Settings className="h-4 w-4 shrink-0" />
           <span className="font-medium">Settings</span>
         </button>
+        </div>
       </div>
     </aside>
   );

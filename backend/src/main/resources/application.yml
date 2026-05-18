@@ -79,6 +79,25 @@ app:
     max-tokens:      512
     temperature:     0.7
     daily-rag-limit: 100       # max RAG calls per workspace per calendar day
+    model-rates:
+      fallback:
+        input-per-million: 0.15
+        output-per-million: 0.60
+      gpt-4o-mini:
+        input-per-million: 0.15
+        output-per-million: 0.60
+      text-embedding-3-small:
+        input-per-million: 0.02
+        output-per-million: 0
+  agent:
+    max-sequential-tools: 8
+    max-sequential-tools-constrained: 4
+    short-term-memory-max-messages: 24
+    redis-memory-ttl-hours: 168
+    long-term-memory-top-k: 3
+    daily-workspace-limit: 500
+    tavily-api-key: ${TAVILY_API_KEY:}
+    web-search-admin-only: true
   moderation:
     classification-enabled: ${MODERATION_ENABLED:true}
     confidence-threshold:   0.7   # only create a flag when LLM confidence >= this value
@@ -94,7 +113,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, agents
   endpoint:
     health:
       show-details: when-authorized

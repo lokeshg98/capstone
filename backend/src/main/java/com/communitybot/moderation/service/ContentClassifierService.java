@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Uses {@code gpt-4o-mini} as an LLM judge to classify whether a message
@@ -46,7 +47,7 @@ public class ContentClassifierService {
             Be lenient with mild frustration, disagreements, and off-topic content.
             """;
 
-    public ClassificationResult classify(String messageBody) {
+    public ClassificationResult classify(String messageBody, UUID authorId) {
         // Skip very short messages — not enough signal
         if (messageBody.trim().split("\\s+").length < 4) {
             return ClassificationResult.ofSafe();
@@ -58,7 +59,7 @@ public class ContentClassifierService {
         );
 
         try {
-            String raw = chatService.complete(messages, CLASSIFIER_MAX_TOKENS, CLASSIFIER_TEMPERATURE);
+            String raw = chatService.complete(messages, CLASSIFIER_MAX_TOKENS, CLASSIFIER_TEMPERATURE, authorId);
             return parse(raw);
         } catch (Exception e) {
             log.warn("Content classification error: {}", e.getMessage());

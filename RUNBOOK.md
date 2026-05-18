@@ -121,6 +121,23 @@ OPENAI_API_KEY=sk-proj-...
 
 ---
 
+### 1e — Multi-agent Ask Bot (optional)
+
+The **Ask Bot** sidebar panel streams responses over **SSE** (`POST /api/workspaces/{id}/agent/ask/stream`) using a LangChain4j tool-calling assistant. It uses **Redis** for short conversation memory, **pgvector** tables for long-term memory and message semantic search, and respects per-workspace rate limits (`app.agent.daily-workspace-limit` in `application.yml`).
+
+| Variable | Purpose |
+|----------|---------|
+| `TAVILY_API_KEY` | Enables **web search** tools for workspace **admins** when non-empty (`app.agent.web-search-admin-only` defaults to `true`). |
+
+```dotenv
+# Optional — leave empty to disable web search
+TAVILY_API_KEY=
+```
+
+**Observability:** with management exposure configured, `GET /actuator/agents` reports agent invocation metrics (actuator is restricted when authenticated).
+
+---
+
 Everything else (`DB_URL`, `REDIS_*`, `MINIO_*`) matches the Docker Compose defaults and works without changes.
 
 ---
@@ -185,7 +202,7 @@ export $(grep -v '^#' infra/.env | xargs)
 ```
 
 **What happens on first boot:**
-- Flyway runs all six database migrations (`V1_init_schema` → `V6_scheduling`) automatically.
+- Flyway runs all database migrations through the latest version (including agent memory, message embeddings, and proposed scheduling actions) automatically.
 - The bot system user (`bot@community-bot.internal`) is created by `BotUserInitializer`.
 
 The backend is ready when you see:

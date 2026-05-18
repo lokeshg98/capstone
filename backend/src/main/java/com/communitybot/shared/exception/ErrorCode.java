@@ -58,6 +58,7 @@ public enum ErrorCode {
     DOCUMENT_NOT_FOUND("FAQ document not found", HttpStatus.NOT_FOUND),
     DOCUMENT_INGESTION_FAILED("Document ingestion failed; check that the file contains readable text", HttpStatus.UNPROCESSABLE_ENTITY),
     RAG_RATE_LIMIT_EXCEEDED("Daily AI query limit reached for this workspace", HttpStatus.TOO_MANY_REQUESTS),
+    PROPOSED_ACTION_NOT_FOUND("Proposed action not found or already processed", HttpStatus.NOT_FOUND),
 
     // --- Generic ---
     VALIDATION_ERROR("Request validation failed", HttpStatus.BAD_REQUEST),
