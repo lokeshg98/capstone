@@ -73,6 +73,8 @@ Make sure these are installed:
 - Node.js 20 LTS
 - Docker Desktop on Windows, or Docker Engine plus Docker Compose on Linux
 
+You do not need to install Gradle separately. This project includes the Gradle wrapper, so the commands in this guide use `./gradlew` or `gradlew.bat`.
+
 If you are new to computers, a terminal is a window where you type commands.
 
 ## Setup

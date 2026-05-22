@@ -4,6 +4,8 @@
 
 Install these tools once before your first run.
 
+You do not need to install Gradle separately. The repository includes the Gradle wrapper, and all commands below use `./gradlew`.
+
 | Tool | Min version | Install (macOS) |
 |------|-------------|-----------------|
 | Java JDK | **25** | [sdkman.io](https://sdkman.io) — `sdk install java 25.0.2-ms` (recommended) or [adoptium.net](https://adoptium.net) |
