@@ -2,8 +2,7 @@ package com.communitybot.auth.config;
 
 import com.communitybot.auth.domain.User;
 import com.communitybot.auth.service.AuthenticatedPrincipal;
-import com.communitybot.auth.service.JwtService;
-import jakarta.servlet.http.Cookie;
+import com.communitybot.auth.service.AuthSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +25,10 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final JwtService jwtService;
+    private final AuthSessionService sessionService;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
-
-    @Value("${app.jwt.refresh-token-expiry-ms}")
-    private long refreshTokenExpiryMs;
 
     @Override
     public void onAuthenticationSuccess(
@@ -43,14 +39,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         User user = ((AuthenticatedPrincipal) authentication.getPrincipal()).getUser();
 
-        String accessToken  = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        addRefreshCookie(response, refreshToken);
+        AuthSessionService.AuthTokens tokens = sessionService.issue(user);
+        sessionService.addRefreshCookie(response, tokens.refreshToken());
 
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(frontendUrl + "/auth/callback")
-                .queryParam("token", accessToken)
+                .queryParam("token", tokens.accessToken())
                 .build()
                 .toUriString();
 
@@ -58,12 +52,4 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 
-    private void addRefreshCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie("refresh_token", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);               // sent only over HTTPS
-        cookie.setPath("/api/auth/refresh");  // scoped so it isn't sent on every request
-        cookie.setMaxAge((int) (refreshTokenExpiryMs / 1000));
-        response.addCookie(cookie);
-    }
 }

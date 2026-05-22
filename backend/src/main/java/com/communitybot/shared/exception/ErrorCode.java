@@ -13,6 +13,8 @@ public enum ErrorCode {
 
     // --- Auth ---
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
+    INVALID_CREDENTIALS("Invalid email or password", HttpStatus.UNAUTHORIZED),
+    EMAIL_ALREADY_EXISTS("Email is already in use", HttpStatus.CONFLICT),
     INVALID_TOKEN("Invalid or expired token", HttpStatus.UNAUTHORIZED),
 
     // --- Organisation ---

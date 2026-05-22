@@ -64,6 +64,12 @@ If you already installed the tools, do this:
 
    Go to `http://localhost:3000`.
 
+   You can also sign in with the local demo accounts:
+
+   - `admin@communitybot.local` / `Admin123!`
+   - `mod@communitybot.local` / `Mod123!`
+   - `user@communitybot.local` / `User123!`
+
 ## Before You Start
 
 Make sure these are installed:
@@ -236,7 +242,7 @@ Go to:
 
 - http://localhost:3000
 
-Then sign in with Google or GitHub if you set up those credentials.
+Then sign in with Google, GitHub, or one of the local demo accounts.
 
 ## Daily Start
 

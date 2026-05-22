@@ -12,6 +12,7 @@ record UserAttributes(String subject, String email, String name, String avatarUr
 
     static UserAttributes of(OauthProvider provider, Map<String, Object> attrs) {
         return switch (provider) {
+            case LOCAL -> throw new IllegalArgumentException("LOCAL provider does not use OAuth attributes");
             case GOOGLE -> fromGoogle(attrs);
             case GITHUB -> fromGithub(attrs);
         };

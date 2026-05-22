@@ -235,7 +235,13 @@ The frontend is ready when you see:
 
 Go to [http://localhost:3000](http://localhost:3000).
 
-Click **Sign in with Google** or **Sign in with GitHub**. The OAuth flow redirects to the backend and back, sets an `HttpOnly` refresh-token cookie, and lands you on the dashboard.
+You can sign in with Google, GitHub, or the local demo accounts seeded in `dev`:
+
+- `admin@communitybot.local` / `Admin123!`
+- `mod@communitybot.local` / `Mod123!`
+- `user@communitybot.local` / `User123!`
+
+The OAuth flow redirects to the backend and back, sets an `HttpOnly` refresh-token cookie, and lands you on the dashboard.
 
 ---
 

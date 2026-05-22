@@ -1,60 +1,169 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchMe, loginLocal, registerLocal } from './authApi';
 import { useAuthStore } from './useAuthStore';
 import { cn } from '@/lib/utils';
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8080';
 
+type Mode = 'login' | 'register';
+
 export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
-  const navigate        = useNavigate();
+  const setAccessToken   = useAuthStore((s) => s.setAccessToken);
+  const setUser          = useAuthStore((s) => s.setUser);
+  const navigate         = useNavigate();
 
-  // Already logged in — skip straight to dashboard
+  const [mode, setMode] = useState<Mode>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   useEffect(() => {
     if (isAuthenticated) navigate('/dashboard', { replace: true });
   }, [isAuthenticated, navigate]);
 
+  const handleLocalAuth = async (nextMode: Mode) => {
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const accessToken = nextMode === 'login'
+        ? await loginLocal({ email, password })
+        : await registerLocal({ email, password, displayName: displayName || undefined });
+
+      setAccessToken(accessToken);
+      const me = await fetchMe();
+      setUser(me);
+      navigate('/dashboard', { replace: true });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Unable to sign in right now.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 px-6">
-
-        {/* Logo / branding */}
+      <div className="w-full max-w-md space-y-6 px-6 py-10">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 rounded-xl bg-brand-600 flex items-center justify-center">
             <span className="text-white text-xl font-bold">CB</span>
           </div>
-          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
-            Community Bot
-          </h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Sign in to continue to your workspace
-          </p>
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">Community Bot</h1>
+          <p className="mt-2 text-sm text-gray-500">Sign in with email or with Google/GitHub</p>
         </div>
 
-        {/* OAuth buttons */}
-        <div className="space-y-3">
-          <OAuthButton
-            href={`${BACKEND}/oauth2/authorization/google`}
-            label="Continue with Google"
-            icon={<GoogleIcon />}
-          />
-          <OAuthButton
-            href={`${BACKEND}/oauth2/authorization/github`}
-            label="Continue with GitHub"
-            icon={<GitHubIcon />}
-            className="bg-gray-900 text-white hover:bg-gray-800 border-gray-900"
-          />
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+          <div className="flex rounded-lg bg-gray-100 p-1 text-sm font-medium">
+            <button
+              onClick={() => setMode('login')}
+              className={cn(
+                'flex-1 rounded-md px-3 py-2 transition-colors',
+                mode === 'login' ? 'bg-white text-gray-900 shadow' : 'text-gray-500',
+              )}
+            >
+              Sign in
+            </button>
+            <button
+              onClick={() => setMode('register')}
+              className={cn(
+                'flex-1 rounded-md px-3 py-2 transition-colors',
+                mode === 'register' ? 'bg-white text-gray-900 shadow' : 'text-gray-500',
+              )}
+            >
+              Create account
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                autoComplete="email"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="you@example.com"
+              />
+            </label>
+
+            {mode === 'register' && (
+              <label className="block text-sm font-medium text-gray-700">
+                Display name
+                <input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  type="text"
+                  autoComplete="nickname"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                  placeholder="Your name"
+                />
+              </label>
+            )}
+
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="••••••••"
+              />
+            </label>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button
+              onClick={() => handleLocalAuth(mode)}
+              disabled={loading}
+              className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+            >
+              {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
+            </button>
+          </div>
+
+          <div className="border-t border-gray-200 pt-4 space-y-3">
+            <OAuthButton
+              href={`${BACKEND}/oauth2/authorization/google`}
+              label="Continue with Google"
+              icon={<GoogleIcon />}
+            />
+            <OAuthButton
+              href={`${BACKEND}/oauth2/authorization/github`}
+              label="Continue with GitHub"
+              icon={<GitHubIcon />}
+              className="bg-gray-900 text-white hover:bg-gray-800 border-gray-900"
+            />
+          </div>
+
+          {import.meta.env.DEV && (
+            <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+              <p className="font-semibold text-gray-700 mb-1">Demo local accounts</p>
+              <p>admin@communitybot.local / Admin123!</p>
+              <p>mod@communitybot.local / Mod123!</p>
+              <p>user@communitybot.local / User123!</p>
+            </div>
+          )}
         </div>
 
-        <p className="text-center text-xs text-gray-400">
-          By signing in you agree to the community guidelines.
-        </p>
+        <p className="text-center text-xs text-gray-400">By signing in you agree to the community guidelines.</p>
       </div>
     </div>
   );
 }
-
-// ─── sub-components ───────────────────────────────────────────────────────────
 
 function OAuthButton({
   href,
@@ -62,17 +171,16 @@ function OAuthButton({
   icon,
   className,
 }: {
-  href:       string;
-  label:      string;
-  icon:       React.ReactNode;
+  href: string;
+  label: string;
+  icon: React.ReactNode;
   className?: string;
 }) {
   return (
     <a
       href={href}
       className={cn(
-        'flex w-full items-center justify-center gap-3 rounded-lg border px-4 py-3',
-        'text-sm font-medium transition-colors',
+        'flex w-full items-center justify-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium transition-colors',
         'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
         className,
       )}

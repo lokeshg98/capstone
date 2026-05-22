@@ -7,7 +7,13 @@ Answers to the most common questions about using the platform.
 ## Getting Started
 
 **Q: How do I sign in?**
-Go to `http://localhost:3000`. You will be redirected to the login page. Click **Sign in with Google** or **Sign in with GitHub** and complete the OAuth flow. You are returned to the dashboard automatically.
+Go to `http://localhost:3000`. You will be redirected to the login page. You can sign in with email and password, or click **Sign in with Google** or **Sign in with GitHub**. You are returned to the dashboard automatically.
+
+For local development, these demo accounts are available:
+
+- `admin@communitybot.local` / `Admin123!`
+- `mod@communitybot.local` / `Mod123!`
+- `user@communitybot.local` / `User123!`
 
 **Q: I just signed in and the dashboard is empty. What do I do?**
 Click **+ New Organisation** in the top-right corner and give your organisation a name (at least 2 characters). Once created, click on it — the app will automatically provision a default **General** workspace and take you straight to the chat.
