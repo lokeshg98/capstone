@@ -4,10 +4,15 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import { cn } from '@/lib/utils';
 import FileUploadButton from './FileUploadButton';
 import { type AttachmentResponse } from './attachmentApi';
+import type { MessageResponse } from './messageApi';
 
 interface Props {
   channelId:   string;
   channelName: string;
+  addOptimisticMessage: (msg: MessageResponse) => void;
+  commitMessage: (tempId: string, msg: MessageResponse) => void;
+  removeOptimisticMessage: (id: string) => void;
+  currentUser?: { id: string; displayName: string | null; avatarUrl: string | null } | null;
 }
 
 /**
@@ -15,7 +20,14 @@ interface Props {
  * Supports optional file attachment: user picks a PDF/DOCX which is uploaded
  * immediately, then the returned attachment ID is bundled with the message send.
  */
-export default function MessageInput({ channelId, channelName }: Props) {
+export default function MessageInput({
+  channelId,
+  channelName,
+  addOptimisticMessage,
+  commitMessage,
+  removeOptimisticMessage,
+  currentUser,
+}: Props) {
   const [body,              setBody]              = useState('');
   const [sending,           setSending]           = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<AttachmentResponse | null>(null);
@@ -28,23 +40,67 @@ export default function MessageInput({ channelId, channelName }: Props) {
     if ((!trimmed && !pendingAttachment) || sending) return;
 
     setSending(true);
+    const optimisticId = makeTempId();
     try {
-      const payload = {
-        body:         trimmed || (pendingAttachment?.filename ?? ''),
-        threadRootId: null,
-        attachmentId: pendingAttachment?.id ?? null,
+      const draftText = trimmed || (pendingAttachment?.filename ?? '');
+      const now = new Date().toISOString();
+      const actor = currentUser ?? {
+        id: 'me',
+        displayName: 'You',
+        avatarUrl: null,
       };
-
-      if (connected) {
-        publish(`/app/channels/${channelId}/send`, payload);
-      } else {
-        const { api } = await import('@/lib/api');
-        await api.post(`/channels/${channelId}/messages`, payload);
-      }
 
       setBody('');
       setPendingAttachment(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+      try {
+        addOptimisticMessage({
+          id: optimisticId,
+          channelId,
+          workspaceId: '',
+          author: {
+            id: actor.id,
+            displayName: actor.displayName,
+            avatarUrl: actor.avatarUrl,
+          },
+          body: draftText,
+          threadRootId: null,
+          status: 'ACTIVE',
+          edited: false,
+          editedAt: null,
+          createdAt: now,
+          reactions: [],
+          attachment: pendingAttachment
+            ? {
+                id: pendingAttachment.id,
+                filename: pendingAttachment.filename,
+                mimeType: pendingAttachment.mimeType,
+                kind: pendingAttachment.kind,
+                sizeBytes: pendingAttachment.sizeBytes,
+              }
+            : null,
+          pending: true,
+        });
+      } catch (optimisticError) {
+        console.error('Failed to add optimistic message', optimisticError);
+      }
+
+      const payload = {
+        body:         draftText,
+        threadRootId: null,
+        attachmentId: pendingAttachment?.id ?? null,
+      };
+
+      const { api } = await import('@/lib/api');
+      const { data } = await api.post<{ ok: boolean; data: MessageResponse }>(`/channels/${channelId}/messages`, payload);
+      if (!connected) {
+        commitMessage(optimisticId, { ...data.data, pending: false });
+      }
+
+    } catch (error) {
+      removeOptimisticMessage(optimisticId);
+      console.error('Failed to send message', error);
     } finally {
       setSending(false);
       textareaRef.current?.focus();
@@ -72,7 +128,13 @@ export default function MessageInput({ channelId, channelName }: Props) {
   const canSend = (body.trim().length > 0 || pendingAttachment !== null) && !sending;
 
   return (
-    <div className="shrink-0 px-4 pb-4 pt-2">
+    <form
+      className="shrink-0 px-4 pb-4 pt-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void send();
+      }}
+    >
       <div className={cn(
         'rounded-xl border bg-white transition-shadow',
         'focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent',
@@ -112,7 +174,7 @@ export default function MessageInput({ channelId, channelName }: Props) {
           />
 
           <button
-            onClick={send}
+            type="submit"
             disabled={!canSend}
             className={cn(
               'h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
@@ -132,6 +194,10 @@ export default function MessageInput({ channelId, channelName }: Props) {
           Reconnecting to real-time server… messages will be sent via HTTP.
         </p>
       )}
-    </div>
+    </form>
   );
+}
+
+function makeTempId() {
+  return `temp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }

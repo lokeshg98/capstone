@@ -1,6 +1,7 @@
 import { type MessageResponse } from './messageApi';
 import AttachmentDisplay from './AttachmentDisplay';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 interface Props {
   message:     MessageResponse;
@@ -19,7 +20,7 @@ export default function MessageItem({ message, isOwn }: Props) {
   });
 
   return (
-    <div className={cn('flex items-start gap-3 px-4 py-1.5 group hover:bg-gray-50')}>
+    <div className={cn('flex items-start gap-3 px-4 py-1.5 group hover:bg-gray-50', message.pending && 'opacity-70')}>
       {/* Avatar */}
       <div className="h-8 w-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0 mt-0.5">
         {message.author.avatarUrl ? (
@@ -40,6 +41,12 @@ export default function MessageItem({ message, isOwn }: Props) {
             {message.author.displayName ?? 'Unknown'}
           </span>
           <span className="text-xs text-gray-400">{time}</span>
+          {message.pending && (
+            <span className="inline-flex items-center gap-1 text-xs text-gray-400 italic">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Sending…
+            </span>
+          )}
           {message.edited && (
             <span className="text-xs text-gray-400 italic">(edited)</span>
           )}
@@ -49,7 +56,9 @@ export default function MessageItem({ message, isOwn }: Props) {
           <p className="text-sm text-gray-400 italic">This message was deleted.</p>
         ) : (
           <>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{message.body}</p>
+            <p className={cn('text-sm whitespace-pre-wrap break-words', message.pending ? 'text-gray-500' : 'text-gray-800')}>
+              {message.body}
+            </p>
             {message.attachment && (
               <AttachmentDisplay attachment={message.attachment} />
             )}

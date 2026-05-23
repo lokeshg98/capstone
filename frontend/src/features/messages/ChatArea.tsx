@@ -13,7 +13,14 @@ interface Props {
  * Layout: flex column that fills the parent.
  */
 export default function ChatArea({ channel }: Props) {
-  const { data: messages = [], isLoading } = useChannelMessages(channel.id);
+  const {
+    data: messages = [],
+    isLoading,
+    addOptimisticMessage,
+    commitMessage,
+    removeOptimisticMessage,
+    currentUser,
+  } = useChannelMessages(channel.id);
 
   return (
     <div className="flex flex-col h-full">
@@ -33,7 +40,14 @@ export default function ChatArea({ channel }: Props) {
       <MessageList messages={messages} isLoading={isLoading} />
 
       {/* Composer */}
-      <MessageInput channelId={channel.id} channelName={channel.name} />
+      <MessageInput
+        channelId={channel.id}
+        channelName={channel.name}
+        addOptimisticMessage={addOptimisticMessage}
+        commitMessage={commitMessage}
+        removeOptimisticMessage={removeOptimisticMessage}
+        currentUser={currentUser}
+      />
     </div>
   );
 }
