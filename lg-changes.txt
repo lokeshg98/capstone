@@ -1,0 +1,25 @@
+1) UI page showing tech stack such as langchain4j, React. they should be removed completely from User Ui and admin screens
+2) decrypt-ai channels is not showing all members. 
+3) weekly digest is showing Set N8N_API_KEY in the backend environment before importing the workflow. it's not correct
+4) while trying to delete organization, getting error.snapshot below
+image.png
+5) no emoji are shown. even after typing happy, happy emoji doesn't appear
+
+
+7) Summarize long threads (10+ messages) into digestible overviews
+
+8) Welcome new members with personalized onboarding messages based on their profile/interests
+9) Schedule automated posts (e.g., "Weekly Digest every Friday 5pm")
+
+10) Build FAQ knowledge base (minimum 20 Q&A pairs covering community rules, technical help, resources)
+
+11) implement content classification for moderation
+
+12) user should be allowed to search for other members by namme and able to send direct messages
+
+13) users should be able to send reactions/emojis
+
+14) users should be able to share images and files in the chat
+
+
+added few more users to Signin

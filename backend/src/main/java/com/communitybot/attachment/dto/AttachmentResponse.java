@@ -12,8 +12,9 @@ public record AttachmentResponse(
         UUID   id,
         String filename,
         String mimeType,
-        String kind,       // "PDF" | "DOCX"
-        long   sizeBytes
+        String kind,       // PDF | DOCX | JPEG | TXT | MD
+        long   sizeBytes,
+        String scanStatus  // PENDING | CLEAN | INFECTED | ERROR
 ) {
     public static AttachmentResponse from(Attachment a) {
         return new AttachmentResponse(
@@ -21,7 +22,8 @@ public record AttachmentResponse(
                 a.getFilename(),
                 a.getMimeType(),
                 a.getKind().name(),
-                a.getSizeBytes()
+                a.getSizeBytes(),
+                a.getScanStatus().name()
         );
     }
 }

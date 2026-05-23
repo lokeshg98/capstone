@@ -14,8 +14,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.servlet.DispatcherType;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -44,6 +48,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfiguration()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         .requestMatchers(
                                 "/",
                                 "/index.html",
@@ -58,6 +63,13 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/api/internal/n8n/**").hasRole("N8N")
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        // API clients expect 401 JSON, not a browser redirect to /login
+                        .defaultAuthenticationEntryPointFor(
+                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                                new AntPathRequestMatcher("/api/**")
+                        )
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(ep -> ep

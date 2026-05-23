@@ -35,6 +35,8 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
     public static final String ADMIN_EMAIL = "admin@communitybot.local";
     public static final String MOD_EMAIL   = "mod@communitybot.local";
     public static final String USER_EMAIL  = "user@communitybot.local";
+    public static final String USER2_EMAIL = "user2@communitybot.local";
+    public static final String USER3_EMAIL = "user3@communitybot.local";
 
     private static final String DEMO_ORG_NAME = "Community Bot Demo";
     private static final String DEMO_WS_NAME  = "General";
@@ -53,6 +55,8 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
         var admin = localAuthService.seedAccount(ADMIN_EMAIL, "Admin123!", "Local Admin");
         var mod   = localAuthService.seedAccount(MOD_EMAIL, "Mod123!", "Local Moderator");
         var user  = localAuthService.seedAccount(USER_EMAIL, "User123!", "Local User");
+        var user2 = localAuthService.seedAccount(USER2_EMAIL, "User123!", "Demo User Two");
+        var user3 = localAuthService.seedAccount(USER3_EMAIL, "User123!", "Demo User Three");
 
         UUID orgId = organizationService.listForUser(admin.getId()).stream()
                 .filter(org -> DEMO_ORG_NAME.equals(org.name()))
@@ -68,14 +72,21 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
 
         ensureOrgMember(orgId, mod.getId(), OrgRole.MEMBER);
         ensureOrgMember(orgId, user.getId(), OrgRole.MEMBER);
+        ensureOrgMember(orgId, user2.getId(), OrgRole.MEMBER);
+        ensureOrgMember(orgId, user3.getId(), OrgRole.MEMBER);
 
         ensureWorkspaceMember(orgId, workspaceId, mod.getId());
         ensureWorkspaceMember(orgId, workspaceId, user.getId());
+        ensureWorkspaceMember(orgId, workspaceId, user2.getId());
+        ensureWorkspaceMember(orgId, workspaceId, user3.getId());
 
         ensureRole(workspaceId, mod.getId(), "Moderator");
         ensureRole(workspaceId, user.getId(), "User");
+        ensureRole(workspaceId, user2.getId(), "User");
+        ensureRole(workspaceId, user3.getId(), "User");
 
-        log.info("Seeded local auth accounts: {}, {}, {}", ADMIN_EMAIL, MOD_EMAIL, USER_EMAIL);
+        log.info("Seeded local auth accounts: {}, {}, {}, {}, {}",
+                ADMIN_EMAIL, MOD_EMAIL, USER_EMAIL, USER2_EMAIL, USER3_EMAIL);
     }
 
     private void ensureOrgMember(UUID orgId, UUID userId, OrgRole role) {

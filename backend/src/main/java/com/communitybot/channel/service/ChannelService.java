@@ -14,6 +14,7 @@ import com.communitybot.shared.exception.AppException;
 import com.communitybot.shared.exception.ErrorCode;
 import com.communitybot.shared.util.SlugGenerator;
 import com.communitybot.workspace.domain.Workspace;
+import com.communitybot.workspace.domain.WorkspaceMember;
 import com.communitybot.workspace.repository.WorkspaceMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,8 @@ public class ChannelService {
                 ChannelMember.builder().channel(channel).user(creator).build()
         );
 
+        addAllWorkspaceMembers(channel, workspaceId, creatorId);
+
         return ChannelResponse.from(channel, true);
     }
 
@@ -86,18 +89,26 @@ public class ChannelService {
     }
 
     /**
-     * Adds a user who has just joined a workspace to the #general channel.
-     * No-op if the channel doesn't exist or the user is already a member.
+     * Adds a user who has just joined a workspace to every public channel.
+     * No-op for channels where the user is already a member.
      */
     @Transactional
+    public void joinAllPublicChannels(UUID workspaceId, User user) {
+        channelRepository.findAllByWorkspaceIdAndTypeOrderByNameAsc(workspaceId, ChannelType.PUBLIC)
+                .forEach(channel -> {
+                    if (!channelMemberRepository.existsByChannelIdAndUserId(channel.getId(), user.getId())) {
+                        channelMemberRepository.save(
+                                ChannelMember.builder().channel(channel).user(user).build()
+                        );
+                    }
+                });
+    }
+
+    /** @deprecated use {@link #joinAllPublicChannels(UUID, User)} */
+    @Deprecated
+    @Transactional
     public void joinGeneralChannel(UUID workspaceId, User user) {
-        channelRepository.findByWorkspaceIdAndSlug(workspaceId, "general").ifPresent(general -> {
-            if (!channelMemberRepository.existsByChannelIdAndUserId(general.getId(), user.getId())) {
-                channelMemberRepository.save(
-                        ChannelMember.builder().channel(general).user(user).build()
-                );
-            }
-        });
+        joinAllPublicChannels(workspaceId, user);
     }
 
     @Transactional(readOnly = true)
@@ -136,14 +147,18 @@ public class ChannelService {
         if (!channel.getWorkspace().getId().equals(workspaceId)) {
             throw new AppException(ErrorCode.CHANNEL_NOT_FOUND);
         }
-        requireChannelMember(channelId, userId);
+        if (channel.getType() != ChannelType.PUBLIC) {
+            requireChannelMember(channelId, userId);
+        }
+
+        if (channel.getType() == ChannelType.PUBLIC) {
+            return wsMemberRepository.findAllByWorkspaceId(workspaceId).stream()
+                    .map(wm -> toMemberResponse(workspaceId, wm))
+                    .toList();
+        }
+
         return channelMemberRepository.findAllByChannelIdWithUser(channelId).stream()
-                .map(cm -> {
-                    var member = wsMemberRepository.findByWorkspaceIdAndUserId(workspaceId, cm.getUser().getId());
-                    List<String> roles = member.map(m -> m.getRoles().stream()
-                            .map(r -> r.getName()).sorted().toList()).orElse(List.of());
-                    return ChannelMemberResponse.from(cm, false, roles);
-                })
+                .map(cm -> toMemberResponse(workspaceId, cm))
                 .toList();
     }
 
@@ -165,6 +180,32 @@ public class ChannelService {
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!wsMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw new AppException(ErrorCode.WORKSPACE_ACCESS_DENIED);
+        }
+    }
+
+    private ChannelMemberResponse toMemberResponse(UUID workspaceId, ChannelMember cm) {
+        var member = wsMemberRepository.findByWorkspaceIdAndUserId(workspaceId, cm.getUser().getId());
+        List<String> roles = member.map(m -> m.getRoles().stream()
+                .map(r -> r.getName()).sorted().toList()).orElse(List.of());
+        return ChannelMemberResponse.from(cm, false, roles);
+    }
+
+    private ChannelMemberResponse toMemberResponse(UUID workspaceId, WorkspaceMember wm) {
+        List<String> roles = wm.getRoles().stream().map(r -> r.getName()).sorted().toList();
+        return ChannelMemberResponse.fromWorkspaceMember(wm, false, roles);
+    }
+
+    private void addAllWorkspaceMembers(Channel channel, UUID workspaceId, UUID creatorId) {
+        for (WorkspaceMember wm : wsMemberRepository.findAllByWorkspaceId(workspaceId)) {
+            UUID uid = wm.getUser().getId();
+            if (uid.equals(creatorId)) {
+                continue;
+            }
+            if (!channelMemberRepository.existsByChannelIdAndUserId(channel.getId(), uid)) {
+                channelMemberRepository.save(
+                        ChannelMember.builder().channel(channel).user(wm.getUser()).build()
+                );
+            }
         }
     }
 

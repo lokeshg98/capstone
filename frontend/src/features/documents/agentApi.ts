@@ -123,6 +123,7 @@ export async function streamAgentAsk(
 
   const decoder = new TextDecoder();
   let buffer = '';
+  let gotFinal = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -137,7 +138,9 @@ export async function streamAgentAsk(
       const { event, data } = parseSseBlock(block);
       if (event !== 'agent' || !data) continue;
       try {
-        onEvent(JSON.parse(data) as AgentStreamEvent);
+        const parsed = JSON.parse(data) as AgentStreamEvent;
+        if (parsed.type === 'final') gotFinal = true;
+        onEvent(parsed);
       } catch {
         /* skip malformed */
       }
@@ -148,11 +151,17 @@ export async function streamAgentAsk(
     const { event, data } = parseSseBlock(buffer);
     if (event === 'agent' && data) {
       try {
-        onEvent(JSON.parse(data) as AgentStreamEvent);
+        const parsed = JSON.parse(data) as AgentStreamEvent;
+        if (parsed.type === 'final') gotFinal = true;
+        onEvent(parsed);
       } catch {
         /* skip */
       }
     }
+  }
+
+  if (!gotFinal) {
+    throw new Error('Assistant stream ended before a response was ready.');
   }
 }
 

@@ -19,6 +19,8 @@ That's it. One command starts everything — PostgreSQL, Redis, MinIO, the backe
 | `admin@communitybot.local` | `Admin123!` | Admin |
 | `mod@communitybot.local` | `Mod123!` | Moderator |
 | `user@communitybot.local` | `User123!` | Member |
+| `user2@communitybot.local` | `User123!` | Member (demo) |
+| `user3@communitybot.local` | `User123!` | Member (demo) |
 
 The accounts, a demo organization, and a workspace are auto-seeded in dev mode.
 

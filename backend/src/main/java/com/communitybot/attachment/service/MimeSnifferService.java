@@ -6,6 +6,7 @@ import com.communitybot.shared.exception.ErrorCode;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -19,7 +20,10 @@ public class MimeSnifferService {
 
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/jpeg",
+            "text/plain",
+            "text/markdown"
     );
 
     /**
@@ -34,10 +38,27 @@ public class MimeSnifferService {
         return ALLOWED_MIME_TYPES.contains(mimeType);
     }
 
-    public AttachmentKind toKind(String mimeType) {
+    /**
+     * Maps a detected MIME type (and filename for plain-text disambiguation) to {@link AttachmentKind}.
+     */
+    public AttachmentKind toKind(String mimeType, String filename) {
+        String lowerName = filename.toLowerCase(Locale.ROOT);
+
+        if ("text/plain".equals(mimeType) || "text/markdown".equals(mimeType)) {
+            if (lowerName.endsWith(".md")) {
+                return AttachmentKind.MD;
+            }
+            if (lowerName.endsWith(".txt")) {
+                return AttachmentKind.TXT;
+            }
+            throw new AppException(ErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED,
+                    "Plain-text uploads must use a .txt or .md extension");
+        }
+
         return switch (mimeType) {
             case "application/pdf" -> AttachmentKind.PDF;
             case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> AttachmentKind.DOCX;
+            case "image/jpeg" -> AttachmentKind.JPEG;
             default -> throw new AppException(ErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED);
         };
     }

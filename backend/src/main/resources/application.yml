@@ -23,6 +23,7 @@ spring:
   flyway:
     locations: classpath:db/migration
     baseline-on-migrate: true
+    out-of-order: true   # allow V7.1 / V8.1 / V9.1 after V7–V9 were already applied
 
   security:
     oauth2:
@@ -122,7 +123,7 @@ app:
   joypixels:
     enabled: true
     emoji-json-url: https://cdn.jsdelivr.net/npm/emoji-toolkit@9.0.0/emoji.json
-    cdn-base: https://cdn.jsdelivr.net/npm/emoji-toolkit@9.0.0
+    cdn-base: https://cdn.jsdelivr.net/joypixels/assets/9.0/png/unicode
     png-size: 64
     ai-search-enabled: true
     default-limit: 24

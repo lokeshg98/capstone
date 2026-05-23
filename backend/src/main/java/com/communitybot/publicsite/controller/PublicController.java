@@ -65,7 +65,7 @@ public class PublicController {
                         ),
                         new PlatformInfoResponse.FeatureCard(
                                 "Role-based flows",
-                                "LangGraph4j routes member vs moderator/admin capabilities automatically.",
+                                "Member, moderator, and admin capabilities are applied automatically based on your role.",
                                 "roles"
                         )
                 )

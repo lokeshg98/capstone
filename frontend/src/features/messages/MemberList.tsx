@@ -26,19 +26,25 @@ export default function MemberList({ workspaceId, channelId, onSelectUser }: Pro
     );
   }
 
-  const online = members.filter((m) => isOnline(m.userId));
-  const offline = members.filter((m) => !isOnline(m.userId));
+  const admins = members.filter((m) => m.roles.includes('Admin'));
+  const mods = members.filter((m) => !m.roles.includes('Admin') && m.roles.includes('Moderator'));
+  const users = members.filter((m) => !m.roles.includes('Admin') && !m.roles.includes('Moderator'));
 
-  const admins = online.filter((m) => m.roles.includes('Admin'));
-  const mods = online.filter((m) => !m.roles.includes('Admin') && m.roles.includes('Moderator'));
-  const users = online.filter((m) => !m.roles.includes('Admin') && !m.roles.includes('Moderator'));
+  const onlineAdmins = admins.filter((m) => isOnline(m.userId));
+  const offlineAdmins = admins.filter((m) => !isOnline(m.userId));
+  const onlineMods = mods.filter((m) => isOnline(m.userId));
+  const offlineMods = mods.filter((m) => !isOnline(m.userId));
+  const onlineUsers = users.filter((m) => isOnline(m.userId));
+  const offlineUsers = users.filter((m) => !isOnline(m.userId));
 
   return (
     <div className="w-56 shrink-0 bg-gray-50 border-l border-gray-200 overflow-y-auto">
-      {admins.length > 0 && <MemberGroup label="Admins" members={admins} onSelectUser={onSelectUser} isOnline />}
-      {mods.length > 0 && <MemberGroup label="Moderators" members={mods} onSelectUser={onSelectUser} isOnline />}
-      {users.length > 0 && <MemberGroup label="Online" members={users} onSelectUser={onSelectUser} isOnline />}
-      {offline.length > 0 && <MemberGroup label="Offline" members={offline} onSelectUser={onSelectUser} isOnline={false} />}
+      {onlineAdmins.length > 0 && <MemberGroup label="Admins" members={onlineAdmins} onSelectUser={onSelectUser} isOnline />}
+      {offlineAdmins.length > 0 && <MemberGroup label="Admins" members={offlineAdmins} onSelectUser={onSelectUser} isOnline={false} />}
+      {onlineMods.length > 0 && <MemberGroup label="Moderators" members={onlineMods} onSelectUser={onSelectUser} isOnline />}
+      {offlineMods.length > 0 && <MemberGroup label="Moderators" members={offlineMods} onSelectUser={onSelectUser} isOnline={false} />}
+      {onlineUsers.length > 0 && <MemberGroup label="Online" members={onlineUsers} onSelectUser={onSelectUser} isOnline />}
+      {offlineUsers.length > 0 && <MemberGroup label="Offline" members={offlineUsers} onSelectUser={onSelectUser} isOnline={false} />}
       {members.length === 0 && (
         <p className="text-xs text-gray-400 p-3">No members yet.</p>
       )}

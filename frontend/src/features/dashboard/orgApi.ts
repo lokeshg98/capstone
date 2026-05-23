@@ -29,5 +29,5 @@ export async function joinOrgBySlug(slug: string): Promise<OrgResponse> {
 }
 
 export async function deleteOrg(orgId: string, confirmSlug: string): Promise<void> {
-  await api.delete(`/organizations/${orgId}`, { data: { confirmSlug } });
+  await api.post(`/organizations/${orgId}/delete`, { confirmSlug });
 }

@@ -106,7 +106,7 @@ export default function HomePage() {
             <h2 className="text-xl font-bold">Try the bot — no login required</h2>
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            Ask about Community Bot features. Powered by LangGraph4j public flow + FAQ search.
+            Ask about Community Bot features. Answers are grounded in the platform FAQ.
           </p>
           <div className="flex gap-2">
             <input
@@ -190,7 +190,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-gray-200 py-8 text-center text-xs text-gray-400">
-        Community Bot · Capstone project · LangGraph4j member &amp; admin flows
+        Community Bot · Capstone project
       </footer>
     </div>
   );

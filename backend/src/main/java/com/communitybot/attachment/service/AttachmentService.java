@@ -16,14 +16,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class AttachmentService {
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            ".pdf", ".docx", ".jpg", ".jpeg", ".md", ".txt"
+    );
 
     private final AttachmentRepository attachmentRepository;
     private final StorageService       storageService;
@@ -42,61 +49,51 @@ public class AttachmentService {
      * 1. Size check
      * 2. Extension allow-list (first defence)
      * 3. Magic-byte MIME sniff via Apache Tika (second defence)
-     * 4. ClamAV virus scan (third defence, optional in dev)
-     * 5. Store in MinIO
+     * 4. Store in MinIO
+     * 5. ClamAV virus scan on stored object (third defence, optional in dev)
      * 6. Persist metadata in DB
      */
     @Transactional
     public AttachmentResponse upload(MultipartFile file, UUID uploaderId) {
-        // 1. Size check
         if (file.getSize() > maxSizeBytes) {
             throw new AppException(ErrorCode.ATTACHMENT_TOO_LARGE);
         }
 
-        // 2. Extension check (cheap first gate)
         String originalName = sanitizeFilename(file.getOriginalFilename());
         validateExtension(originalName);
 
-        // 3. MIME sniff (read only the header bytes — don't hold the full file in memory)
-        String detectedMime;
-        try (InputStream is = file.getInputStream()) {
-            byte[] header = is.readNBytes(4096);
-            detectedMime = mimeSnifferService.detectMime(header);
+        byte[] content;
+        try {
+            content = file.getBytes();
         } catch (IOException e) {
             throw new AppException(ErrorCode.ATTACHMENT_UPLOAD_FAILED);
         }
+
+        if (content.length > maxSizeBytes) {
+            throw new AppException(ErrorCode.ATTACHMENT_TOO_LARGE);
+        }
+
+        int headerLen = Math.min(content.length, 4096);
+        String detectedMime = mimeSnifferService.detectMime(
+                java.util.Arrays.copyOf(content, headerLen)
+        );
 
         if (!mimeSnifferService.isAllowed(detectedMime)) {
             throw new AppException(ErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED,
                     "Detected MIME type: " + detectedMime);
         }
-        AttachmentKind kind = mimeSnifferService.toKind(detectedMime);
+        AttachmentKind kind = mimeSnifferService.toKind(detectedMime, originalName);
+        validateExtensionMatchesKind(originalName, kind);
 
-        // 4. ClamAV scan
-        if (clamAvEnabled) {
-            try (InputStream is = file.getInputStream()) {
-                ClamAvService.ScanResult result = clamAvService.scan(is);
-                log.info("AV scan: file='{}' result='{}'", originalName, result.rawResponse());
-                if (!result.clean()) {
-                    throw new AppException(ErrorCode.ATTACHMENT_INFECTED);
-                }
-            } catch (AppException e) {
-                throw e;
-            } catch (Exception e) {
-                log.error("ClamAV unreachable: {}", e.getMessage());
-                throw new AppException(ErrorCode.ATTACHMENT_SCAN_FAILED);
-            }
-        }
-
-        // 5. Upload to MinIO; if DB save later fails we clean up the orphan
         String objectKey = uploaderId + "/" + UUID.randomUUID() + "/" + originalName;
-        try (InputStream is = file.getInputStream()) {
-            storageService.upload(objectKey, is, file.getSize(), detectedMime);
+        try (InputStream is = new ByteArrayInputStream(content)) {
+            storageService.upload(objectKey, is, content.length, detectedMime);
         } catch (IOException e) {
             throw new AppException(ErrorCode.ATTACHMENT_UPLOAD_FAILED);
         }
 
-        // 6. Persist
+        ScanStatus scanStatus = scanStoredObject(objectKey, originalName);
+
         User uploader = userService.getOrThrow(uploaderId);
         Attachment saved;
         try {
@@ -105,14 +102,13 @@ public class AttachmentService {
                             .uploadedBy(uploader)
                             .filename(originalName)
                             .mimeType(detectedMime)
-                            .sizeBytes(file.getSize())
+                            .sizeBytes((long) content.length)
                             .kind(kind)
                             .storageKey(objectKey)
-                            .scanStatus(ScanStatus.CLEAN)
+                            .scanStatus(scanStatus)
                             .build()
             );
         } catch (Exception e) {
-            // Best-effort cleanup: remove the orphaned MinIO object
             storageService.delete(objectKey);
             throw new AppException(ErrorCode.ATTACHMENT_UPLOAD_FAILED);
         }
@@ -129,23 +125,72 @@ public class AttachmentService {
                 .orElseThrow(() -> new AppException(ErrorCode.ATTACHMENT_NOT_FOUND));
     }
 
+    public void requireClean(Attachment attachment) {
+        if (attachment.getScanStatus() != ScanStatus.CLEAN) {
+            throw new AppException(ErrorCode.ATTACHMENT_SCAN_FAILED,
+                    "This file is not available yet — virus scan did not complete successfully");
+        }
+    }
+
     public InputStream openStream(Attachment attachment) {
+        requireClean(attachment);
         return storageService.download(attachment.getStorageKey());
+    }
+
+    public long maxSizeBytes() {
+        return maxSizeBytes;
     }
 
     // -------------------------------------------------------------------------
 
+    private ScanStatus scanStoredObject(String objectKey, String filename) {
+        if (!clamAvEnabled) {
+            log.debug("ClamAV disabled — marking '{}' as clean without scan", filename);
+            return ScanStatus.CLEAN;
+        }
+
+        try (InputStream is = storageService.download(objectKey)) {
+            ClamAvService.ScanResult result = clamAvService.scan(is);
+            log.info("AV scan: file='{}' result='{}'", filename, result.rawResponse());
+            if (!result.clean()) {
+                storageService.delete(objectKey);
+                throw new AppException(ErrorCode.ATTACHMENT_INFECTED);
+            }
+            return ScanStatus.CLEAN;
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("ClamAV unreachable for '{}': {}", filename, e.getMessage());
+            storageService.delete(objectKey);
+            throw new AppException(ErrorCode.ATTACHMENT_SCAN_FAILED);
+        }
+    }
+
     private String sanitizeFilename(String original) {
         if (original == null || original.isBlank()) return "upload";
-        // Strip path separators and other dangerous characters
         return original.replaceAll("[^a-zA-Z0-9._\\-]", "_");
     }
 
     private void validateExtension(String filename) {
-        String lower = filename.toLowerCase();
-        if (!lower.endsWith(".pdf") && !lower.endsWith(".docx")) {
+        String lower = filename.toLowerCase(Locale.ROOT);
+        boolean allowed = ALLOWED_EXTENSIONS.stream().anyMatch(lower::endsWith);
+        if (!allowed) {
+            throw new AppException(ErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED);
+        }
+    }
+
+    private void validateExtensionMatchesKind(String filename, AttachmentKind kind) {
+        String lower = filename.toLowerCase(Locale.ROOT);
+        boolean ok = switch (kind) {
+            case PDF -> lower.endsWith(".pdf");
+            case DOCX -> lower.endsWith(".docx");
+            case JPEG -> lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+            case TXT -> lower.endsWith(".txt");
+            case MD -> lower.endsWith(".md");
+        };
+        if (!ok) {
             throw new AppException(ErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED,
-                    "Only .pdf and .docx extensions are accepted");
+                    "File extension does not match detected content type");
         }
     }
 }

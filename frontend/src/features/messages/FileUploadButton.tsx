@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react';
-import { Paperclip, X, FileText, File } from 'lucide-react';
-import { uploadAttachment, type AttachmentResponse } from './attachmentApi';
+import { useQuery } from '@tanstack/react-query';
+import { Paperclip, X, FileText, File, ImageIcon } from 'lucide-react';
+import {
+  uploadAttachment,
+  fetchAttachmentLimits,
+  validateAttachmentFile,
+  formatAttachmentBytes,
+  ACCEPTED_FILE_TYPES,
+  DEFAULT_MAX_ATTACHMENT_BYTES,
+  type AttachmentResponse,
+} from './attachmentApi';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -9,29 +18,50 @@ interface Props {
   onClear:    () => void;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+function kindIcon(kind: AttachmentResponse['kind']) {
+  switch (kind) {
+    case 'PDF':  return <FileText className="h-3.5 w-3.5 shrink-0" />;
+    case 'JPEG': return <ImageIcon className="h-3.5 w-3.5 shrink-0" />;
+    default:     return <File className="h-3.5 w-3.5 shrink-0" />;
+  }
 }
 
 /**
- * Renders a paperclip button. When a file is selected it uploads immediately
- * and calls `onAttached` with the result, showing a dismissible chip.
+ * Paperclip upload control. Validates type/size client-side, uploads to the backend,
+ * and runs a virus scan on the stored object before the attachment can be sent.
  */
 export default function FileUploadButton({ pending, onAttached, onClear }: Props) {
-  const inputRef            = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: limits } = useQuery({
+    queryKey: ['attachment-limits'],
+    queryFn:  fetchAttachmentLimits,
+    staleTime: 60_000,
+  });
+
+  const maxBytes = limits?.maxSizeBytes ?? DEFAULT_MAX_ATTACHMENT_BYTES;
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset so re-selecting the same file triggers onChange
     e.target.value = '';
     setError(null);
+
+    const validationError = validateAttachmentFile(file, maxBytes);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setUploading(true);
     try {
       const result = await uploadAttachment(file);
+      if (result.scanStatus !== 'CLEAN') {
+        setError('File could not be verified by the virus scanner');
+        return;
+      }
       onAttached(result);
     } catch (err: unknown) {
       const msg =
@@ -46,12 +76,12 @@ export default function FileUploadButton({ pending, onAttached, onClear }: Props
   if (pending) {
     return (
       <div className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs text-blue-700">
-        {pending.kind === 'PDF'
-          ? <FileText className="h-3.5 w-3.5 shrink-0" />
-          : <File     className="h-3.5 w-3.5 shrink-0" />
-        }
+        {kindIcon(pending.kind)}
         <span className="max-w-[140px] truncate font-medium">{pending.filename}</span>
-        <span className="text-blue-400">({formatBytes(pending.sizeBytes)})</span>
+        <span className="text-blue-400">({formatAttachmentBytes(pending.sizeBytes)})</span>
+        {pending.scanStatus === 'CLEAN' && (
+          <span className="text-green-600" title="Virus scan passed">✓</span>
+        )}
         <button
           type="button"
           onClick={onClear}
@@ -64,12 +94,14 @@ export default function FileUploadButton({ pending, onAttached, onClear }: Props
     );
   }
 
+  const maxLabel = formatAttachmentBytes(maxBytes);
+
   return (
     <>
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept={ACCEPTED_FILE_TYPES}
         className="hidden"
         onChange={handleChange}
       />
@@ -84,7 +116,7 @@ export default function FileUploadButton({ pending, onAttached, onClear }: Props
               ? 'text-gray-300 cursor-not-allowed'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100',
           )}
-          title="Attach PDF or DOCX (max 10 MB)"
+          title={`Attach JPG, PDF, DOCX, .md, or .txt (max ${maxLabel})`}
         >
           {uploading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -96,8 +128,11 @@ export default function FileUploadButton({ pending, onAttached, onClear }: Props
             <Paperclip className="h-4 w-4" />
           )}
         </button>
+        {uploading && (
+          <p className="mt-0.5 px-1 text-[10px] text-gray-500">Uploading &amp; scanning…</p>
+        )}
         {error && (
-          <p className="mt-0.5 px-1 text-xs text-red-600 max-w-[200px] truncate">{error}</p>
+          <p className="mt-0.5 px-1 text-xs text-red-600 max-w-[220px]">{error}</p>
         )}
       </div>
     </>

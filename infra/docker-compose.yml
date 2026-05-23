@@ -79,6 +79,8 @@ services:
       N8N_PROTOCOL:            http
       GENERIC_TIMEZONE:        America/New_York
       N8N_API_KEY:             ${N8N_API_KEY:-change-me-in-production}
+      # n8n 2.x blocks $env in expressions unless explicitly allowed
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

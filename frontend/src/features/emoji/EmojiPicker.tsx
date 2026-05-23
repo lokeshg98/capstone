@@ -66,6 +66,11 @@ export default function EmojiPicker({ onSelect, onClose, className }: Props) {
         {isFetching && results.length === 0 && (
           <p className="text-xs text-gray-400 text-center py-4">Searching…</p>
         )}
+        {!isFetching && results.length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-4">
+            {debounced.trim() ? 'No emoji match that search.' : 'Type to search emoji.'}
+          </p>
+        )}
         <div className="grid grid-cols-8 gap-1">
           {results.map((emoji) => (
             <button
@@ -83,7 +88,14 @@ export default function EmojiPicker({ onSelect, onClose, className }: Props) {
                 alt={emoji.name}
                 className="h-6 w-6"
                 loading="lazy"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  img.style.display = 'none';
+                  const fallback = img.nextElementSibling;
+                  if (fallback instanceof HTMLElement) fallback.style.display = 'block';
+                }}
               />
+              <span className="text-lg leading-none hidden" aria-hidden>{emoji.unicode}</span>
             </button>
           ))}
         </div>

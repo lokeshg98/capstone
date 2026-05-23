@@ -157,7 +157,7 @@ export default function AskBotPanel({ workspaceId }: Props) {
 
           if (ev.type === 'token' && ev.token) {
             const next = [...h];
-            next[idx] = { ...cur, answer: cur.answer + ev.token };
+            next[idx] = { ...cur, thinking: null, answer: cur.answer + ev.token };
             return next;
           }
 
@@ -285,7 +285,7 @@ export default function AskBotPanel({ workspaceId }: Props) {
 
                 {!turn.error && (
                   <AgentTimeline
-                    thinking={turn.thinking}
+                    thinking={turn.loading ? turn.thinking : null}
                     toolCalls={turn.toolCalls}
                     citations={turn.citations}
                     proposedAction={turn.proposedAction}

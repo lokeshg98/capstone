@@ -16,7 +16,7 @@ export interface AttachmentInfo {
   id:        string;
   filename:  string;
   mimeType:  string;
-  kind:      'PDF' | 'DOCX';
+  kind:      'PDF' | 'DOCX' | 'JPEG' | 'TXT' | 'MD';
   sizeBytes: number;
 }
 

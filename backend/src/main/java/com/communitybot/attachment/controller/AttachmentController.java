@@ -1,6 +1,8 @@
 package com.communitybot.attachment.controller;
 
 import com.communitybot.attachment.domain.Attachment;
+import com.communitybot.attachment.domain.AttachmentKind;
+import com.communitybot.attachment.dto.AttachmentLimitsResponse;
 import com.communitybot.attachment.dto.AttachmentResponse;
 import com.communitybot.attachment.service.AttachmentService;
 import com.communitybot.shared.dto.ApiResponse;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,6 +26,14 @@ import java.util.UUID;
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
+
+    @GetMapping("/limits")
+    public ResponseEntity<ApiResponse<AttachmentLimitsResponse>> limits() {
+        return ResponseEntity.ok(ApiResponse.ok(new AttachmentLimitsResponse(
+                attachmentService.maxSizeBytes(),
+                List.of(".jpg", ".jpeg", ".pdf", ".docx", ".md", ".txt")
+        )));
+    }
 
     /**
      * Uploads a file through the full validation + scan pipeline.
@@ -40,8 +51,7 @@ public class AttachmentController {
 
     /**
      * Streams the file content through the backend (avoids MinIO CORS concerns).
-     * PDFs are served inline so the browser can render them directly.
-     * DOCX files are served as attachments (download).
+     * Images and PDFs are served inline; other types download by default.
      */
     @GetMapping("/{attachmentId}/content")
     public ResponseEntity<StreamingResponseBody> content(
@@ -49,10 +59,11 @@ public class AttachmentController {
             @CurrentUser UUID userId
     ) {
         Attachment attachment = attachmentService.getOrThrow(attachmentId);
+        attachmentService.requireClean(attachment);
 
         MediaType mediaType = MediaType.parseMediaType(attachment.getMimeType());
 
-        ContentDisposition disposition = attachment.getKind().name().equals("PDF")
+        ContentDisposition disposition = isInlineKind(attachment.getKind())
                 ? ContentDisposition.inline().filename(attachment.getFilename()).build()
                 : ContentDisposition.attachment().filename(attachment.getFilename()).build();
 
@@ -70,5 +81,12 @@ public class AttachmentController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(body);
+    }
+
+    private static boolean isInlineKind(AttachmentKind kind) {
+        return kind == AttachmentKind.PDF
+                || kind == AttachmentKind.JPEG
+                || kind == AttachmentKind.TXT
+                || kind == AttachmentKind.MD;
     }
 }

@@ -1,43 +1,66 @@
 import { FileText, File, ExternalLink, Download } from 'lucide-react';
-import { attachmentContentUrl, type AttachmentResponse } from './attachmentApi';
+import {
+  attachmentContentUrl,
+  formatAttachmentBytes,
+  type AttachmentResponse,
+} from './attachmentApi';
 
 interface Props {
-  attachment: AttachmentResponse;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  attachment: Pick<AttachmentResponse, 'id' | 'filename' | 'kind' | 'sizeBytes'>;
 }
 
 /**
- * Compact card shown inside a message bubble when the message has an attachment.
- * PDFs open in a new browser tab (served inline by the backend).
- * DOCX files trigger a download.
+ * Renders an attachment inside a message bubble.
+ * JPEG images preview inline; PDFs/text open in a new tab; DOCX downloads.
  */
 export default function AttachmentDisplay({ attachment }: Props) {
-  const url   = attachmentContentUrl(attachment.id);
-  const isPdf = attachment.kind === 'PDF';
+  const url = attachmentContentUrl(attachment.id);
+
+  if (attachment.kind === 'JPEG') {
+    return (
+      <div className="mt-1.5 max-w-sm">
+        <a href={url} target="_blank" rel="noreferrer" className="block group">
+          <img
+            src={url}
+            alt={attachment.filename}
+            className="rounded-lg border border-gray-200 max-h-64 object-contain bg-gray-50"
+            loading="lazy"
+          />
+          <p className="mt-1 text-xs text-gray-500 group-hover:text-brand-600 truncate">
+            {attachment.filename} · {formatAttachmentBytes(attachment.sizeBytes)}
+          </p>
+        </a>
+      </div>
+    );
+  }
+
+  const isInline = attachment.kind === 'PDF' || attachment.kind === 'TXT' || attachment.kind === 'MD';
+
+  const icon = (() => {
+    switch (attachment.kind) {
+      case 'PDF': return <FileText className="h-4 w-4 shrink-0 text-red-500" />;
+      case 'TXT':
+      case 'MD':  return <FileText className="h-4 w-4 shrink-0 text-gray-500" />;
+      default:    return <File className="h-4 w-4 shrink-0 text-blue-500" />;
+    }
+  })();
 
   return (
     <div className="mt-1.5 inline-flex items-center gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm max-w-xs">
-      {isPdf
-        ? <FileText className="h-4 w-4 shrink-0 text-red-500" />
-        : <File     className="h-4 w-4 shrink-0 text-blue-500" />
-      }
+      {icon}
 
       <div className="flex-1 min-w-0">
         <p className="truncate font-medium text-gray-800 leading-tight">{attachment.filename}</p>
-        <p className="text-xs text-gray-400">{formatBytes(attachment.sizeBytes)}</p>
+        <p className="text-xs text-gray-400">{formatAttachmentBytes(attachment.sizeBytes)}</p>
       </div>
 
-      {isPdf ? (
+      {isInline ? (
         <a
           href={url}
           target="_blank"
           rel="noreferrer"
           className="shrink-0 text-brand-600 hover:text-brand-700 transition-colors"
-          title="Open PDF"
+          title="Open file"
         >
           <ExternalLink className="h-4 w-4" />
         </a>

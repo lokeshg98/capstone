@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, SmilePlus } from 'lucide-react';
-import { type MessageResponse, addReaction, removeReaction } from './messageApi';
+import { type MessageResponse, addReaction, removeReaction, type PageResponse } from './messageApi';
 import EmojiPicker from '@/features/emoji/EmojiPicker';
-import { type EmojiSearchResult } from '@/features/emoji/emojiApi';
+import { type EmojiSearchResult, emojiImageUrl } from '@/features/emoji/emojiApi';
 import AttachmentDisplay from './AttachmentDisplay';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
@@ -36,9 +36,13 @@ export default function MessageItem({
       return addReaction(channelId, message.id, emoji);
     },
     onSuccess: (updated) => {
-      qc.setQueryData<MessageResponse[]>(['messages', channelId], (prev = []) =>
-        prev.map((m) => (m.id === updated.id ? updated : m)),
-      );
+      qc.setQueryData<PageResponse<MessageResponse>>(['messages', channelId], (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          content: prev.content.map((m) => (m.id === updated.id ? updated : m)),
+        };
+      });
       if (message.threadRootId) {
         qc.setQueryData(['thread', channelId, message.threadRootId], (prev: unknown) => {
           if (!prev || typeof prev !== 'object' || !('replies' in prev)) return prev;
@@ -124,7 +128,8 @@ export default function MessageItem({
                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
                 )}
               >
-                {r.emoji} {r.count}
+                <img src={emojiImageUrl(r.emoji)} alt="" className="h-4 w-4" aria-hidden />
+                {r.count}
               </button>
             ))}
           </div>

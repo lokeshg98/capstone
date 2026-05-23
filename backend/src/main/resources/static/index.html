@@ -55,7 +55,7 @@
       <div>
         <a href="#features">Features</a> ·
         <a href="#faq">FAQ</a> ·
-        <a href="http://localhost:3000" class="app-link">React app ↗</a>
+        <a href="http://localhost:3000" class="app-link">Open app ↗</a>
       </div>
     </div>
   </header>
@@ -64,7 +64,7 @@
     <section class="hero">
       <p class="tag" id="tagline">Loading…</p>
       <h1 id="hero-title">Community Bot</h1>
-      <p class="summary" id="summary">AI-powered Slack-style community chat with moderation, RAG, and LangGraph4j agent flows.</p>
+      <p class="summary" id="summary">AI-powered Slack-style community chat with moderation, FAQ assistant, and scheduled posts.</p>
       <div class="oauth" id="login">
         <a class="btn" href="/oauth2/authorization/google">Continue with Google</a>
         <a class="btn btn-dark" href="/oauth2/authorization/github">Continue with GitHub</a>
@@ -80,7 +80,7 @@
     <section>
       <div class="demo">
         <h2 style="font-size:1.125rem;margin-bottom:.25rem;">Try the bot — no login required</h2>
-        <p style="font-size:.875rem;color:#4b5563;">Ask about Community Bot. LangGraph4j public flow + FAQ search.</p>
+        <p style="font-size:.875rem;color:#4b5563;">Ask about Community Bot. Answers are grounded in the platform FAQ.</p>
         <div class="demo-row">
           <input id="bot-q" placeholder="e.g. How does moderation work?" />
           <button type="button" id="bot-ask">Ask</button>
@@ -107,7 +107,7 @@
     </section>
   </main>
 
-  <footer>Community Bot · LangGraph4j member &amp; admin flows · <a href="http://localhost:3000">Full app at :3000</a></footer>
+  <footer>Community Bot · Capstone project · <a href="http://localhost:3000">Open full app</a></footer>
 
   <script>
     async function api(path, opts) {

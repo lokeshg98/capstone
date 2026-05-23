@@ -13,22 +13,46 @@ This folder contains an [n8n](https://n8n.io/) workflow that triggers **personal
 
 ## Quick start
 
-1. Set the same secret on backend and n8n:
+1. Set the same secret on backend and n8n (in `infra/.env`):
    ```bash
-   export N8N_API_KEY=your-secret-key
+   N8N_API_KEY=your-secret-key
    ```
 
-2. Start n8n (Docker):
+2. Start n8n (Docker). The compose file sets `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` so the workflow can use `{{$env.N8N_API_KEY}}`:
    ```bash
    cd infra && docker compose up -d n8n
    ```
-   Open http://localhost:5678 (default login `admin` / `admin`).
+   Or from repo root: `./dev.sh --with-n8n`
+
+   **If you changed docker-compose, recreate the container** (env vars are read at start):
+   ```bash
+   docker compose -f infra/docker-compose.yml up -d --force-recreate n8n
+   ```
 
 3. In n8n: **Workflows → Import from File** → select `weekly-digest-workflow.json`.
 
-4. Set environment variable `N8N_API_KEY` in n8n (Settings → Variables) to match the backend.
+4. Ensure `N8N_API_KEY` in `infra/.env` matches the backend. The workflow reads it via `$env.N8N_API_KEY` (no separate n8n Variables step needed when using Docker).
 
 5. Activate the workflow.
+
+## Troubleshooting
+
+### `access to env vars denied` on “Trigger Weekly Digest”
+
+n8n **2.x** blocks `$env` in node expressions by default. Fix:
+
+1. Confirm `infra/docker-compose.yml` includes:
+   ```yaml
+   N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+   ```
+2. Recreate the n8n container:
+   ```bash
+   set -a && source infra/.env && set +a
+   docker compose -f infra/docker-compose.yml up -d --force-recreate n8n
+   ```
+3. Re-run the workflow.
+
+**Alternative (no `$env`):** In the HTTP Request node, replace the header value with your literal key (same as `N8N_API_KEY` in `infra/.env`) instead of `={{$env.N8N_API_KEY}}`.
 
 ## Webhook body (optional)
 

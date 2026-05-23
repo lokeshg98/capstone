@@ -17,7 +17,7 @@ public class JoyPixelsProperties {
     private String emojiJsonUrl =
             "https://cdn.jsdelivr.net/npm/emoji-toolkit@9.0.0/emoji.json";
 
-    private String cdnBase = "https://cdn.jsdelivr.net/npm/emoji-toolkit@9.0.0";
+    private String cdnBase = "https://cdn.jsdelivr.net/joypixels/assets/9.0/png/unicode";
 
     /** PNG size segment in CDN path: 32, 64, or 128. */
     private int pngSize = 64;

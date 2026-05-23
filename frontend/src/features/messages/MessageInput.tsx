@@ -7,7 +7,7 @@ import FileUploadButton from './FileUploadButton';
 import { type AttachmentResponse } from './attachmentApi';
 import EmojiPicker from '@/features/emoji/EmojiPicker';
 import { type EmojiSearchResult } from '@/features/emoji/emojiApi';
-import type { MessageResponse } from './messageApi';
+import type { MessageResponse, PageResponse } from './messageApi';
 
 interface Props {
   channelId:    string;
@@ -43,18 +43,26 @@ export default function MessageInput({
         if (thread.replies.some((m) => m.id === newMsg.id)) return prev;
         return { ...thread, replies: [...thread.replies, newMsg] };
       });
-      qc.setQueryData<MessageResponse[]>(['messages', channelId], (prev = []) =>
-        prev.map((m) =>
-          m.id === newMsg.threadRootId
-            ? { ...m, replyCount: (m.replyCount ?? 0) + 1 }
-            : m,
-        ),
-      );
+      qc.setQueryData<PageResponse<MessageResponse>>(['messages', channelId], (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          content: prev.content.map((m) =>
+            m.id === newMsg.threadRootId
+              ? { ...m, replyCount: (m.replyCount ?? 0) + 1 }
+              : m,
+          ),
+        };
+      });
       return;
     }
-    qc.setQueryData<MessageResponse[]>(['messages', channelId], (prev = []) => {
-      if (prev.some((m) => m.id === newMsg.id)) return prev;
-      return [...prev, { ...newMsg, replyCount: newMsg.replyCount ?? 0 }];
+    qc.setQueryData<PageResponse<MessageResponse>>(['messages', channelId], (prev) => {
+      if (!prev) return prev;
+      if (prev.content.some((m) => m.id === newMsg.id)) return prev;
+      return {
+        ...prev,
+        content: [...prev.content, { ...newMsg, replyCount: newMsg.replyCount ?? 0 }],
+      };
     });
   };
 

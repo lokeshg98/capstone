@@ -1,0 +1,100 @@
+---
+title: Multi-Tool Coordination & Intelligent Routing
+---
+flowchart TB
+  subgraph EP["Entry Points"]
+    direction LR
+    A["Ask Bot SSE<br/><i>POST …/agent/ask/stream</i>"]
+    B["@bot Channel Mention<br/><i>BotMentionListener</i>"]
+    C["Public FAQ<br/><i>PublicController</i>"]
+  end
+
+  subgraph CTX["Request Context"]
+    D["AgentContextHolder<br/>workspace · user · channelMode · streamSink"]
+  end
+
+  subgraph RT["Intelligent Routing — AgentFlowType.fromContext()"]
+    E{Select agent flow}
+    F["PUBLIC<br/>public_agent"]
+    G["CHANNEL<br/>channel_agent"]
+    H["MEMBER<br/>member_agent"]
+    I["MODERATOR<br/>moderator_agent"]
+  end
+
+  subgraph LG["LangGraph4j Orchestrator"]
+    J["CommunityAgentGraphService<br/>conditional edges START → subgraph"]
+  end
+
+  subgraph EX["Execution Engine"]
+    K["LangChain4j Assistant<br/>system prompt per flow"]
+    L["Multi-Tool ReAct Loop<br/>max 4 or 8 sequential tools"]
+    M["CommunityAgentTools / PublicAgentTools"]
+  end
+
+  subgraph TOOLS["Tool Library (examples)"]
+    direction LR
+    T1["searchFaqDocuments"]
+    T2["recallPastConversations"]
+    T3["searchChannelMessages"]
+    T4["summarizeThread"]
+    T5["moderationStats"]
+    T6["proposeScheduledPost"]
+    T7["searchPublicFaq"]
+  end
+
+  subgraph STATE["Shared Run State"]
+    N["AgentRunStateHolder / AgentRunState"]
+    N1["citations"]
+    N2["steps"]
+    N3["proposals"]
+  end
+
+  subgraph STREAM["SSE Event Stream"]
+    O["thinking · tool_start · tool_result · token · action_proposal · final"]
+  end
+
+  subgraph UI["Frontend — AgentTimeline UI"]
+    P["AskBotPanel.tsx"]
+    Q["AgentTimeline.tsx<br/>tools · sources · confirm/decline"]
+  end
+
+  A --> D
+  B --> D
+  C --> D
+
+  D --> E
+  E -->|no workspace| F
+  E -->|constrainedChannelMode| G
+  E -->|standard member| H
+  E -->|Admin or Moderator| I
+
+  F & G & H & I --> J
+  J --> K
+  K --> L
+  L --> M
+  M --> T1 & T2 & T3 & T4 & T5 & T6
+  F -.-> T7
+
+  L -->|beforeToolExecution / afterToolExecution| N
+  M -->|addCitation · addStep · setProposal| N
+  N --> N1 & N2 & N3
+
+  L -->|emit AgentStreamEvent| O
+  N -->|bundle in final payload| O
+
+  O --> P
+  P --> Q
+
+  B -.->|sync reply in thread| R["Channel message feed<br/><i>no full timeline</i>"]
+
+  classDef entry fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+  classDef route fill:#fef3c7,stroke:#d97706,color:#78350f
+  classDef exec fill:#dcfce7,stroke:#16a34a,color:#14532d
+  classDef state fill:#f3e8ff,stroke:#9333ea,color:#581c87
+  classDef ui fill:#fce7f3,stroke:#db2777,color:#831843
+
+  class A,B,C entry
+  class E,F,G,H,I route
+  class K,L,M exec
+  class N,N1,N2,N3,O state
+  class P,Q ui

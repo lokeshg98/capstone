@@ -45,7 +45,9 @@ public enum ErrorCode {
     // --- Attachment ---
     ATTACHMENT_NOT_FOUND("Attachment not found", HttpStatus.NOT_FOUND),
     ATTACHMENT_TOO_LARGE("File exceeds the 10 MB size limit", HttpStatus.PAYLOAD_TOO_LARGE),
-    ATTACHMENT_TYPE_NOT_ALLOWED("Only PDF and DOCX files are accepted", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+    ATTACHMENT_TYPE_NOT_ALLOWED(
+            "Only JPG, PDF, DOCX, Markdown (.md), and plain text (.txt) files are accepted",
+            HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     ATTACHMENT_INFECTED("File rejected: antivirus scanner detected a threat", HttpStatus.UNPROCESSABLE_ENTITY),
     ATTACHMENT_SCAN_FAILED("Virus scan service is unavailable; upload rejected for safety", HttpStatus.SERVICE_UNAVAILABLE),
     ATTACHMENT_UPLOAD_FAILED("File storage failed; please try again", HttpStatus.INTERNAL_SERVER_ERROR),

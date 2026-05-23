@@ -11,9 +11,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Extracts plain text from PDF (via PDFBox) and DOCX (via Apache POI) files.
+ * Extracts plain text from supported document types for FAQ ingestion.
  */
 @Service
 @Slf4j
@@ -23,7 +24,15 @@ public class TextExtractorService {
         return switch (kind) {
             case PDF  -> extractPdf(stream);
             case DOCX -> extractDocx(stream);
+            case TXT, MD -> extractPlainText(stream);
+            case JPEG -> throw new IOException("Image files cannot be ingested as FAQ text");
         };
+    }
+
+    private String extractPlainText(InputStream stream) throws IOException {
+        String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        log.debug("Plain text extracted: {} chars", text.length());
+        return text;
     }
 
     private String extractPdf(InputStream stream) throws IOException {

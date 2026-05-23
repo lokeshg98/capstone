@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchThread,
   type MessageResponse,
+  type PageResponse,
   type WsOutboundEvent,
 } from '@/features/messages/messageApi';
 import { useWebSocket } from '@/context/WebSocketContext';
@@ -46,11 +47,15 @@ export function useThreadMessages(channelId: string | null, threadRootId: string
           return next;
         });
 
-        qc.setQueryData<MessageResponse[]>(['messages', channelId], (prev = []) =>
-          prev.map((m) =>
-            m.id === threadRootId ? { ...m, replyCount: m.replyCount + 1 } : m,
-          ),
-        );
+        qc.setQueryData<PageResponse<MessageResponse>>(['messages', channelId], (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            content: prev.content.map((m) =>
+              m.id === threadRootId ? { ...m, replyCount: m.replyCount + 1 } : m,
+            ),
+          };
+        });
         return;
       }
 

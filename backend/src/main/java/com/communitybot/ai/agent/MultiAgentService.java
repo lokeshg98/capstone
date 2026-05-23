@@ -245,6 +245,17 @@ public class MultiAgentService {
                     })
                     .onError(err -> {
                         try {
+                            log.warn("Agent stream failed: {}", err.getMessage());
+                            sink.accept(AgentStreamEvent.done(new AgentStreamEvent.AgentAnswerPayload(
+                                    "Sorry, I could not complete that request. "
+                                            + "Check that OPENAI_API_KEY is set and the backend logs for details.",
+                                    0,
+                                    List.of(),
+                                    List.of(),
+                                    null
+                            )));
+                            emitter.complete();
+                        } catch (Exception e) {
                             emitter.completeWithError(err);
                         } finally {
                             AgentContextHolder.clear();
@@ -256,7 +267,17 @@ public class MultiAgentService {
         } catch (Exception e) {
             AgentContextHolder.clear();
             AgentRunStateHolder.clear();
-            emitter.completeWithError(e);
+            try {
+                emitter.send(SseEmitter.event().name("agent").data(
+                        AgentStreamEvent.done(new AgentStreamEvent.AgentAnswerPayload(
+                                "Sorry, the assistant encountered an error: " + e.getMessage(),
+                                0, List.of(), List.of(), null
+                        )),
+                        MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } catch (Exception sendErr) {
+                emitter.completeWithError(e);
+            }
         }
     }
 

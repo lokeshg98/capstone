@@ -8,6 +8,14 @@ const BACKEND = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8080';
 
 type Mode = 'login' | 'register';
 
+const DEMO_ACCOUNTS = [
+  { email: 'admin@communitybot.local', password: 'Admin123!', label: 'Local Admin', role: 'Admin' },
+  { email: 'mod@communitybot.local', password: 'Mod123!', label: 'Local Moderator', role: 'Moderator' },
+  { email: 'user@communitybot.local', password: 'User123!', label: 'Local User', role: 'Member' },
+  { email: 'user2@communitybot.local', password: 'User123!', label: 'Demo User Two', role: 'Member' },
+  { email: 'user3@communitybot.local', password: 'User123!', label: 'Demo User Three', role: 'Member' },
+] as const;
+
 export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const setAccessToken   = useAuthStore((s) => s.setAccessToken);
@@ -164,11 +172,30 @@ export default function LoginPage() {
           </div>
 
           {import.meta.env.DEV && (
-            <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
-              <p className="font-semibold text-gray-700 mb-1">Demo local accounts</p>
-              <p>admin@communitybot.local / Admin123!</p>
-              <p>mod@communitybot.local / Mod123!</p>
-              <p>user@communitybot.local / User123!</p>
+            <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600 space-y-2">
+              <p className="font-semibold text-gray-700">Demo local accounts</p>
+              <ul className="space-y-2">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <li key={account.email} className="rounded-md border border-gray-200 bg-white px-2.5 py-2">
+                    <p className="font-medium text-gray-800">{account.label}</p>
+                    <p className="mt-0.5 font-mono text-[11px] text-gray-600">{account.email}</p>
+                    <p className="font-mono text-[11px] text-gray-600">Password: {account.password}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{account.role}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail(account.email);
+                        setPassword(account.password);
+                        setError('');
+                        setMode('login');
+                      }}
+                      className="mt-1.5 text-[11px] font-medium text-brand-600 hover:text-brand-700 hover:underline"
+                    >
+                      Use this account
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

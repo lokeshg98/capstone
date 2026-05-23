@@ -12,7 +12,6 @@ import {
 import {
   fetchDigestPreferences,
   updateDigestPreferences,
-  fetchN8nIntegrationInfo,
 } from '@/features/scheduling/digestApi';
 import { fetchWelcomeTemplate, updateWelcomeTemplate, fetchCommunityGuidelines, updateCommunityGuidelines } from './workspaceApi';
 import {
@@ -316,7 +315,7 @@ function ScheduledPostRow({
 
 // ─── Weekly Digest (n8n) ─────────────────────────────────────────────────────
 
-function WeeklyDigestTab({ workspaceId }: { workspaceId: string }) {
+function WeeklyDigestTab({ workspaceId: _workspaceId }: { workspaceId: string }) {
   const qc = useQueryClient();
 
   const { data: prefs, isLoading: prefsLoading } = useQuery({
@@ -324,17 +323,12 @@ function WeeklyDigestTab({ workspaceId }: { workspaceId: string }) {
     queryFn:  fetchDigestPreferences,
   });
 
-  const { data: n8nInfo, isLoading: n8nLoading } = useQuery({
-    queryKey: ['n8n-integration'],
-    queryFn:  fetchN8nIntegrationInfo,
-  });
-
   const updateMut = useMutation({
     mutationFn: (enabled: boolean) => updateDigestPreferences(enabled),
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['digest-preferences'] }),
   });
 
-  if (prefsLoading || n8nLoading) {
+  if (prefsLoading) {
     return <p className="text-sm text-gray-500">Loading…</p>;
   }
 
@@ -346,9 +340,9 @@ function WeeklyDigestTab({ workspaceId }: { workspaceId: string }) {
           Weekly Digest every Friday 5pm
         </div>
         <p className="text-sm text-violet-800 leading-relaxed">
-          n8n triggers a webhook that builds a personalized digest from activity in{' '}
-          <strong>all channels you are subscribed to</strong> (via channel membership).
-          Digests are posted to <code className="bg-white/70 px-1 rounded">#weekly-digest</code>.
+          Each Friday at 5pm you can receive a personalized summary of activity in{' '}
+          <strong>channels you belong to</strong>. Summaries are posted to{' '}
+          <code className="bg-white/70 px-1 rounded">#weekly-digest</code>.
         </p>
       </div>
 
@@ -363,44 +357,10 @@ function WeeklyDigestTab({ workspaceId }: { workspaceId: string }) {
         <span>
           <span className="text-sm font-medium text-gray-800 block">Receive weekly digest</span>
           <span className="text-xs text-gray-500">
-            Opt out if you do not want a Friday summary across your subscribed channels.
+            Opt out if you do not want a Friday summary across your channels.
           </span>
         </span>
       </label>
-
-      <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-800">n8n setup</h3>
-        {!n8nInfo?.configured && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-            Set <code className="bg-white px-1">N8N_API_KEY</code> in the backend environment before importing the workflow.
-          </p>
-        )}
-        <dl className="text-xs space-y-2">
-          <div>
-            <dt className="font-medium text-gray-600">Webhook URL</dt>
-            <dd className="font-mono bg-gray-50 border rounded px-2 py-1 mt-0.5 break-all">
-              {n8nInfo?.webhookUrl}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-600">Auth header</dt>
-            <dd className="font-mono bg-gray-50 border rounded px-2 py-1 mt-0.5">
-              {n8nInfo?.apiKeyHeader}: &lt;your N8N_API_KEY&gt;
-            </dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-600">Cron (Friday 5pm)</dt>
-            <dd className="font-mono bg-gray-50 border rounded px-2 py-1 mt-0.5">
-              {n8nInfo?.cronExample}
-            </dd>
-            <dd className="text-gray-500 mt-1">{n8nInfo?.cronDescription}</dd>
-          </div>
-        </dl>
-        <p className="text-xs text-gray-500">
-          Import <code className="bg-gray-100 px-1 rounded">n8n/weekly-digest-workflow.json</code> from the repo.
-          Optional body: <code className="bg-gray-100 px-1 rounded">{`{"workspaceId":"${workspaceId}","periodDays":7}`}</code>
-        </p>
-      </div>
     </div>
   );
 }

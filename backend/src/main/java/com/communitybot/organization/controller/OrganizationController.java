@@ -59,7 +59,7 @@ public class OrganizationController {
     }
 
     /** Deletes an organisation permanently. Requires matching slug confirmation; owner only. */
-    @DeleteMapping("/{orgId}")
+    @PostMapping("/{orgId}/delete")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID orgId,
             @Valid @RequestBody DeleteOrgRequest request,

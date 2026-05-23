@@ -92,7 +92,13 @@ public class JoyPixelsEmojiService {
     }
 
     public List<EmojiSearchResult> search(String query, int limit, UUID userId) {
-        if (!properties.isEnabled() || catalog.isEmpty()) {
+        if (!properties.isEnabled()) {
+            return List.of();
+        }
+        if (catalog.isEmpty()) {
+            loadCatalog();
+        }
+        if (catalog.isEmpty()) {
             return List.of();
         }
         int cap = limit > 0 ? Math.min(limit, 50) : properties.getDefaultLimit();
@@ -197,7 +203,7 @@ public class JoyPixelsEmojiService {
     }
 
     String pngUrl(String fullyQualified) {
-        return properties.getCdnBase() + "/png/" + properties.getPngSize() + "/" + fullyQualified + ".png";
+        return properties.getCdnBase() + "/" + properties.getPngSize() + "/" + fullyQualified + ".png";
     }
 
     static String codePointsToUnicode(String fullyQualified) {

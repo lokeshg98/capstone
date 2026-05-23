@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.UUID;
@@ -29,8 +31,12 @@ public class AgentController {
             @Valid @RequestBody AgentStreamRequest req
     ) {
         SseEmitter emitter = new SseEmitter(300_000L);
-        Thread.ofVirtual().start(() -> multiAgentService.streamAnswer(
-                emitter, wsId, userId, req.conversationId(), req.question()));
+        var securityContext = SecurityContextHolder.getContext();
+        Thread.ofVirtual().start(new DelegatingSecurityContextRunnable(
+                () -> multiAgentService.streamAnswer(
+                        emitter, wsId, userId, req.conversationId(), req.question()),
+                securityContext
+        ));
         return emitter;
     }
 
