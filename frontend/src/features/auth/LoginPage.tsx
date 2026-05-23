@@ -44,9 +44,20 @@ export default function LoginPage() {
       setUser(me);
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        ?? 'Unable to sign in right now.';
-      setError(msg);
+      const response = (err as {
+        response?: {
+          data?: {
+            error?: string;
+            details?: Record<string, string> | string;
+          };
+        };
+      })?.response?.data;
+
+      const validation = response?.details && typeof response.details === 'object'
+        ? Object.values(response.details).join(' ')
+        : null;
+
+      setError(response?.error ?? validation ?? 'Unable to sign in right now.');
     } finally {
       setLoading(false);
     }

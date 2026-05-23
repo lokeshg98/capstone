@@ -109,7 +109,12 @@ wait_for_port() {
   local name="$1" port="$2" max="${3:-30}"
   printf "[dev] Waiting for %s (port %s)" "$name" "$port"
   for _ in $(seq 1 "$max"); do
-    if nc -z localhost "$port" 2>/dev/null; then
+    if command -v curl &>/dev/null; then
+      if curl -fsS "http://127.0.0.1:${port}/" >/dev/null 2>&1 || curl -fsS "http://localhost:${port}/" >/dev/null 2>&1; then
+        echo -e " ${GREEN}ready${NC}"
+        return 0
+      fi
+    elif nc -z 127.0.0.1 "$port" 2>/dev/null || nc -z localhost "$port" 2>/dev/null; then
       echo -e " ${GREEN}ready${NC}"
       return 0
     fi
