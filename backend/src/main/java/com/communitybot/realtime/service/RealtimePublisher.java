@@ -1,7 +1,6 @@
 package com.communitybot.realtime.service;
 
 import com.communitybot.realtime.dto.WsOutboundEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +15,9 @@ import java.util.UUID;
  * The Redis key pattern is {@code channel:{channelId}}, which the pattern subscriber
  * picks up and forwards to the STOMP topic {@code /topic/channels/{channelId}}.
  * This fan-out approach keeps the chat delivery path multi-instance safe.
+ *
+ * <p>All errors are caught and logged — a Redis failure must never block or
+ * fail the caller's response (HTTP or WebSocket).</p>
  */
 @Service
 @Slf4j
@@ -31,8 +33,8 @@ public class RealtimePublisher {
         try {
             String json = objectMapper.writeValueAsString(event);
             redisTemplate.convertAndSend(KEY_PREFIX + channelId, json);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialise WsOutboundEvent for channel {}", channelId, e);
+        } catch (Exception e) {
+            log.error("Failed to publish event to channel {}: {}", channelId, e.getMessage(), e);
         }
     }
 }

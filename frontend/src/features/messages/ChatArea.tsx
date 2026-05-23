@@ -1,7 +1,9 @@
+import { useMemo, useState } from 'react';
 import { Hash } from 'lucide-react';
 import { type ChannelResponse } from '@/features/channels/channelApi';
 import MessageList  from './MessageList';
 import MessageInput from './MessageInput';
+import { type MessageResponse } from './messageApi';
 import { useChannelMessages } from '@/hooks/useChannelMessages';
 
 interface Props {
@@ -16,11 +18,15 @@ export default function ChatArea({ channel }: Props) {
   const {
     data: messages = [],
     isLoading,
-    addOptimisticMessage,
-    commitMessage,
-    removeOptimisticMessage,
     currentUser,
   } = useChannelMessages(channel.id);
+  const [pendingMessages, setPendingMessages] = useState<MessageResponse[]>([]);
+
+  const displayMessages = useMemo(() => {
+    const byId = new Map<string, MessageResponse>();
+    [...messages, ...pendingMessages].forEach((msg) => byId.set(msg.id, msg));
+    return Array.from(byId.values());
+  }, [messages, pendingMessages]);
 
   return (
     <div className="flex flex-col h-full">
@@ -37,15 +43,17 @@ export default function ChatArea({ channel }: Props) {
       </header>
 
       {/* Messages */}
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={displayMessages} isLoading={isLoading} />
 
       {/* Composer */}
       <MessageInput
         channelId={channel.id}
         channelName={channel.name}
-        addOptimisticMessage={addOptimisticMessage}
-        commitMessage={commitMessage}
-        removeOptimisticMessage={removeOptimisticMessage}
+        addOptimisticMessage={(msg) => setPendingMessages((prev) => [...prev, msg])}
+        commitMessage={(tempId, msg) => {
+          setPendingMessages((prev) => prev.map((item) => (item.id === tempId ? msg : item)));
+        }}
+        removeOptimisticMessage={(id) => setPendingMessages((prev) => prev.filter((item) => item.id !== id))}
         currentUser={currentUser}
       />
     </div>

@@ -4,6 +4,8 @@ import com.communitybot.message.dto.AddReactionRequest;
 import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.dto.SendMessageRequest;
 import com.communitybot.message.service.MessageService;
+import com.communitybot.realtime.dto.WsOutboundEvent;
+import com.communitybot.realtime.service.RealtimePublisher;
 import com.communitybot.shared.dto.ApiResponse;
 import com.communitybot.shared.dto.PageResponse;
 import com.communitybot.shared.security.CurrentUser;
@@ -25,7 +27,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MessageController {
 
-    private final MessageService messageService;
+    private final MessageService   messageService;
+    private final RealtimePublisher realtimePublisher;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<MessageResponse>>> list(
@@ -38,7 +41,6 @@ public class MessageController {
                 messageService.loadPage(channelId, userId, page, size)));
     }
 
-    /** REST fallback — the primary send path is via WebSocket. */
     @PostMapping
     public ResponseEntity<ApiResponse<MessageResponse>> send(
             @PathVariable UUID channelId,
@@ -46,6 +48,7 @@ public class MessageController {
             @CurrentUser UUID userId
     ) {
         MessageResponse msg = messageService.send(channelId, userId, req.body(), req.threadRootId(), req.attachmentId());
+        realtimePublisher.publishToChannel(channelId, WsOutboundEvent.messageCreated(msg));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(msg));
     }
 

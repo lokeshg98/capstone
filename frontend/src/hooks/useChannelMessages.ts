@@ -76,45 +76,6 @@ export function useChannelMessages(channelId: string | null) {
 
   return {
     ...query,
-    addOptimisticMessage: (msg: MessageResponse) => {
-      qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
-        if (!prev) {
-          return {
-            content: [msg],
-            page: 0,
-            size: 50,
-            totalElements: 1,
-            totalPages: 1,
-            last: true,
-          };
-        }
-        if (prev.content.some((m) => m.id === msg.id)) return prev;
-        return { ...prev, content: [...prev.content, msg] };
-      });
-    },
-    commitMessage: (tempId: string, msg: MessageResponse) => {
-      qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
-        if (!prev) {
-          return {
-            content: [msg],
-            page: 0,
-            size: 50,
-            totalElements: 1,
-            totalPages: 1,
-            last: true,
-          };
-        }
-        const content = prev.content.filter((m) => m.id !== tempId);
-        if (content.some((m) => m.id === msg.id)) return { ...prev, content };
-        return { ...prev, content: [...content, msg] };
-      });
-    },
-    removeOptimisticMessage: (id: string) => {
-      qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
-        if (!prev) return prev;
-        return { ...prev, content: prev.content.filter((m) => m.id !== id) };
-      });
-    },
     currentUser,
   };
 }
