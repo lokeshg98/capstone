@@ -2,6 +2,7 @@ package com.communitybot.realtime.config;
 
 import com.communitybot.auth.service.JwtService;
 import com.communitybot.auth.service.UserService;
+import com.communitybot.realtime.service.PresenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -35,6 +36,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtService  jwtService;
     private final UserService userService;
+    private final PresenceService presenceService;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -57,6 +59,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             UserDetails ud     = userService.loadUserById(userId);
             var auth = new UsernamePasswordAuthenticationToken(ud, null, ud.getAuthorities());
             accessor.setUser(auth);
+            presenceService.sessionAuthenticated(accessor.getSessionId(), userId);
             log.debug("WS authenticated: userId={}", userId);
         } else {
             log.debug("WS CONNECT with invalid token — rejecting");

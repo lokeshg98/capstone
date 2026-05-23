@@ -37,5 +37,10 @@ public record WsOutboundEvent(String eventType, Object data) {
         return new WsOutboundEvent("TYPING", new TypingPayload(userId, displayName));
     }
 
+    public static WsOutboundEvent presenceUpdated(UUID userId, boolean online) {
+        return new WsOutboundEvent("PRESENCE_UPDATED", new PresencePayload(userId, online));
+    }
+
     public record TypingPayload(UUID userId, String displayName) {}
+    public record PresencePayload(UUID userId, boolean online) {}
 }

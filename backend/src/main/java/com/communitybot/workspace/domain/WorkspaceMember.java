@@ -5,6 +5,8 @@ import com.communitybot.shared.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -33,11 +35,24 @@ public class WorkspaceMember extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private WorkspaceRole role;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "workspace_member_roles",
+        joinColumns = @JoinColumn(name = "member_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<WorkspaceRoleEntity> roles = new HashSet<>();
 
-    public void changeRole(WorkspaceRole newRole) {
-        this.role = newRole;
+    public boolean hasRole(String roleName) {
+        return roles.stream().anyMatch(r -> r.getName().equalsIgnoreCase(roleName));
+    }
+
+    public void addRole(WorkspaceRoleEntity role) {
+        roles.add(role);
+    }
+
+    public void removeRole(WorkspaceRoleEntity role) {
+        roles.remove(role);
     }
 }

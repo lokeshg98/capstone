@@ -8,9 +8,10 @@ import com.communitybot.organization.dto.CreateOrgRequest;
 import com.communitybot.auth.service.UserService;
 import com.communitybot.auth.domain.User;
 import com.communitybot.workspace.domain.WorkspaceMember;
-import com.communitybot.workspace.domain.WorkspaceRole;
+import com.communitybot.workspace.domain.WorkspaceRoleEntity;
 import com.communitybot.workspace.dto.CreateWorkspaceRequest;
 import com.communitybot.workspace.repository.WorkspaceMemberRepository;
+import com.communitybot.workspace.repository.WorkspaceRoleRepository;
 import com.communitybot.workspace.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +36,8 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
     public static final String MOD_EMAIL   = "mod@communitybot.local";
     public static final String USER_EMAIL  = "user@communitybot.local";
 
-    private static final String DEMO_ORG_NAME    = "Community Bot Demo";
-    private static final String DEMO_WS_NAME      = "General";
+    private static final String DEMO_ORG_NAME = "Community Bot Demo";
+    private static final String DEMO_WS_NAME  = "General";
 
     private final LocalAuthService localAuthService;
     private final OrganizationService organizationService;
@@ -44,6 +45,7 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
     private final UserService userService;
     private final OrgMemberRepository orgMemberRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceRoleRepository workspaceRoleRepository;
 
     @Override
     @Transactional
@@ -67,8 +69,11 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
         ensureOrgMember(orgId, mod.getId(), OrgRole.MEMBER);
         ensureOrgMember(orgId, user.getId(), OrgRole.MEMBER);
 
-        ensureWorkspaceRole(orgId, workspaceId, mod.getId(), WorkspaceRole.MODERATOR);
-        ensureWorkspaceRole(orgId, workspaceId, user.getId(), WorkspaceRole.MEMBER);
+        ensureWorkspaceMember(orgId, workspaceId, mod.getId());
+        ensureWorkspaceMember(orgId, workspaceId, user.getId());
+
+        ensureRole(workspaceId, mod.getId(), "Moderator");
+        ensureRole(workspaceId, user.getId(), "User");
 
         log.info("Seeded local auth accounts: {}, {}, {}", ADMIN_EMAIL, MOD_EMAIL, USER_EMAIL);
     }
@@ -88,16 +93,19 @@ public class LocalDevAccountSeeder implements ApplicationRunner {
                 ));
     }
 
-    private void ensureWorkspaceRole(UUID orgId, UUID workspaceId, UUID userId, WorkspaceRole role) {
+    private void ensureWorkspaceMember(UUID orgId, UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             workspaceService.joinWorkspace(orgId, workspaceId, userId);
         }
+    }
 
-        workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .ifPresent(member -> {
-                    if (member.getRole() != role) {
-                        member.changeRole(role);
-                    }
-                });
+    private void ensureRole(UUID workspaceId, UUID userId, String roleName) {
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow();
+        if (!member.hasRole(roleName)) {
+            WorkspaceRoleEntity role = workspaceRoleRepository.findByWorkspaceIdAndName(workspaceId, roleName)
+                    .orElseThrow();
+            member.addRole(role);
+        }
     }
 }

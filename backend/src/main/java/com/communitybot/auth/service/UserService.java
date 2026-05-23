@@ -38,4 +38,11 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
+
+    @Transactional
+    public void updateProfile(UUID userId, String statusMessage, String aboutMe,
+                               String interests, String contactInfo) {
+        User user = getOrThrow(userId);
+        user.updateUserProfile(statusMessage, aboutMe, interests, contactInfo);
+    }
 }

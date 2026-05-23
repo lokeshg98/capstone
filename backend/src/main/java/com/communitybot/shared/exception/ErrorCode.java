@@ -61,6 +61,10 @@ public enum ErrorCode {
     DOCUMENT_INGESTION_FAILED("Document ingestion failed; check that the file contains readable text", HttpStatus.UNPROCESSABLE_ENTITY),
     RAG_RATE_LIMIT_EXCEEDED("Daily AI query limit reached for this workspace", HttpStatus.TOO_MANY_REQUESTS),
 
+    // --- Roles ---
+    ROLE_NOT_FOUND("Role not found", HttpStatus.NOT_FOUND),
+    ROLE_SYSTEM_PROTECTED("System roles cannot be deleted", HttpStatus.FORBIDDEN),
+
     // --- Generic ---
     VALIDATION_ERROR("Request validation failed", HttpStatus.BAD_REQUEST),
     INTERNAL_ERROR("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);

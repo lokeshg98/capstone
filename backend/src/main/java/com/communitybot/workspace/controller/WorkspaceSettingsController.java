@@ -1,19 +1,25 @@
 package com.communitybot.workspace.controller;
 
 import com.communitybot.shared.dto.ApiResponse;
+import com.communitybot.shared.exception.AppException;
+import com.communitybot.shared.exception.ErrorCode;
 import com.communitybot.shared.security.CurrentUser;
+import com.communitybot.workspace.dto.MemberRolesResponse;
+import com.communitybot.workspace.dto.WorkspaceRoleResponse;
 import com.communitybot.workspace.service.WorkspaceService;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Workspace-scoped settings that don't need an orgId — consumed by the
- * workspace page where only wsId is in the URL.
+ * Workspace-scoped settings and role management — consumed by the workspace page.
  */
 @RestController
 @RequestMapping("/api/workspaces/{wsId}")
@@ -36,7 +42,73 @@ public class WorkspaceSettingsController {
             @RequestBody Map<String, @Size(max = 2000) String> body,
             @CurrentUser UUID userId
     ) {
-        wsService.updateWelcomeTemplate(wsId, userId, body.get("template"));
+        String template = body.get("template");
+        if (template == null) throw new AppException(ErrorCode.VALIDATION_ERROR, "template is required");
+        wsService.updateWelcomeTemplate(wsId, userId, template);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // ── Roles ──────────────────────────────────────────────────────────────────
+
+    @GetMapping("/roles")
+    public ResponseEntity<ApiResponse<List<WorkspaceRoleResponse>>> listRoles(
+            @PathVariable UUID wsId,
+            @CurrentUser UUID userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(wsService.listRoles(wsId, userId)));
+    }
+
+    @PostMapping("/roles")
+    public ResponseEntity<ApiResponse<WorkspaceRoleResponse>> createRole(
+            @PathVariable UUID wsId,
+            @RequestBody Map<String, @NotBlank @Size(max = 50) String> body,
+            @CurrentUser UUID userId
+    ) {
+        String name = body.get("name");
+        if (name == null) throw new AppException(ErrorCode.VALIDATION_ERROR, "name is required");
+        WorkspaceRoleResponse role = wsService.createRole(wsId, name, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(role));
+    }
+
+    @DeleteMapping("/roles/{roleId}")
+    public ResponseEntity<ApiResponse<Void>> deleteRole(
+            @PathVariable UUID wsId,
+            @PathVariable UUID roleId,
+            @CurrentUser UUID userId
+    ) {
+        wsService.deleteRole(wsId, roleId, userId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // ── Member roles ───────────────────────────────────────────────────────────
+
+    @GetMapping("/members/roles")
+    public ResponseEntity<ApiResponse<List<MemberRolesResponse>>> listMembersWithRoles(
+            @PathVariable UUID wsId,
+            @CurrentUser UUID userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(wsService.listMembersWithRoles(wsId, userId)));
+    }
+
+    @PostMapping("/members/{memberId}/roles/{roleId}")
+    public ResponseEntity<ApiResponse<Void>> assignRoleToMember(
+            @PathVariable UUID wsId,
+            @PathVariable UUID memberId,
+            @PathVariable UUID roleId,
+            @CurrentUser UUID userId
+    ) {
+        wsService.assignRoleToMember(wsId, memberId, roleId, userId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/members/{memberId}/roles/{roleId}")
+    public ResponseEntity<ApiResponse<Void>> removeRoleFromMember(
+            @PathVariable UUID wsId,
+            @PathVariable UUID memberId,
+            @PathVariable UUID roleId,
+            @CurrentUser UUID userId
+    ) {
+        wsService.removeRoleFromMember(wsId, memberId, roleId, userId);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

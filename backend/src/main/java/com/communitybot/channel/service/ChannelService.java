@@ -5,6 +5,7 @@ import com.communitybot.auth.service.UserService;
 import com.communitybot.channel.domain.Channel;
 import com.communitybot.channel.domain.ChannelMember;
 import com.communitybot.channel.domain.ChannelType;
+import com.communitybot.channel.dto.ChannelMemberResponse;
 import com.communitybot.channel.dto.ChannelResponse;
 import com.communitybot.channel.dto.CreateChannelRequest;
 import com.communitybot.channel.repository.ChannelMemberRepository;
@@ -123,6 +124,19 @@ public class ChannelService {
         User user = userService.getOrThrow(userId);
         channelMemberRepository.save(ChannelMember.builder().channel(channel).user(user).build());
         return ChannelResponse.from(channel, true);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChannelMemberResponse> listMembers(UUID workspaceId, UUID channelId, UUID userId) {
+        requireChannelMember(channelId, userId);
+        return channelMemberRepository.findAllByChannelId(channelId).stream()
+                .map(cm -> {
+                    var member = wsMemberRepository.findByWorkspaceIdAndUserId(workspaceId, cm.getUser().getId());
+                    List<String> roles = member.map(m -> m.getRoles().stream()
+                            .map(r -> r.getName()).sorted().toList()).orElse(List.of());
+                    return ChannelMemberResponse.from(cm, false, roles);
+                })
+                .toList();
     }
 
     // -------------------------------------------------------------------------

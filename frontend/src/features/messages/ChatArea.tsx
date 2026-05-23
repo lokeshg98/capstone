@@ -1,20 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Hash } from 'lucide-react';
+import { Hash, Users } from 'lucide-react';
 import { type ChannelResponse } from '@/features/channels/channelApi';
 import MessageList  from './MessageList';
 import MessageInput from './MessageInput';
 import { type MessageResponse } from './messageApi';
 import { useChannelMessages } from '@/hooks/useChannelMessages';
+import { cn } from '@/lib/utils';
 
 interface Props {
-  channel: ChannelResponse;
+  channel:         ChannelResponse;
+  showMembers:     boolean;
+  onToggleMembers:  () => void;
 }
 
-/**
- * Full-height chat area: header + message list + input box.
- * Layout: flex column that fills the parent.
- */
-export default function ChatArea({ channel }: Props) {
+export default function ChatArea({ channel, showMembers, onToggleMembers }: Props) {
   const {
     data: messages = [],
     isLoading,
@@ -40,6 +39,18 @@ export default function ChatArea({ channel }: Props) {
             <span className="text-sm text-gray-500 truncate">{channel.description}</span>
           </>
         )}
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={onToggleMembers}
+            className={cn(
+              'h-8 w-8 rounded-lg flex items-center justify-center transition-colors',
+              showMembers ? 'bg-gray-100 text-gray-600' : 'text-gray-400 hover:bg-gray-100',
+            )}
+            title={showMembers ? 'Hide member list' : 'Show member list'}
+          >
+            <Users className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       {/* Messages */}

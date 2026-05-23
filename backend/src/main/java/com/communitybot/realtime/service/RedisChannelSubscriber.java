@@ -10,8 +10,13 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Listens on Redis pattern {@code channel:*} and forwards the raw JSON payload
- * to the corresponding STOMP topic.
+ * Listens on Redis patterns {@code channel:*} and {@code workspace:*} and
+ * forwards the raw JSON payload to the corresponding STOMP topic.
+ *
+ * <ul>
+ *   <li>{@code channel:*}   → {@code /topic/channels/{id}}</li>
+ *   <li>{@code workspace:*} → {@code /topic/workspaces/{id}/presence}</li>
+ * </ul>
  *
  * Sending a pre-serialised JSON string to {@link SimpMessagingTemplate} uses
  * Spring's {@code StringMessageConverter} which passes it through verbatim —
@@ -22,8 +27,10 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class RedisChannelSubscriber implements MessageListener {
 
-    private static final String KEY_PREFIX  = "channel:";
-    private static final String STOMP_PREFIX = "/topic/channels/";
+    private static final String CHANNEL_KEY_PREFIX   = "channel:";
+    private static final String WORKSPACE_KEY_PREFIX = "workspace:";
+    private static final String STOMP_CHANNEL_PREFIX = "/topic/channels/";
+    private static final String STOMP_WS_PRESENCE    = "/topic/workspaces/%s/presence";
 
     private final SimpMessagingTemplate stompTemplate;
 
@@ -32,14 +39,14 @@ public class RedisChannelSubscriber implements MessageListener {
         String channelKey = new String(message.getChannel(), StandardCharsets.UTF_8);
         String eventJson  = new String(message.getBody(),   StandardCharsets.UTF_8);
 
-        if (!channelKey.startsWith(KEY_PREFIX)) {
-            log.warn("Received message on unexpected Redis key: {}", channelKey);
-            return;
+        if (channelKey.startsWith(CHANNEL_KEY_PREFIX)) {
+            String channelId = channelKey.substring(CHANNEL_KEY_PREFIX.length());
+            stompTemplate.convertAndSend(STOMP_CHANNEL_PREFIX + channelId, eventJson);
+        } else if (channelKey.startsWith(WORKSPACE_KEY_PREFIX)) {
+            String wsId = channelKey.substring(WORKSPACE_KEY_PREFIX.length());
+            stompTemplate.convertAndSend(STOMP_WS_PRESENCE.formatted(wsId), eventJson);
+        } else {
+            log.warn("Received message on unexpected Redis channel: {}", channelKey);
         }
-
-        String channelId = channelKey.substring(KEY_PREFIX.length());
-        log.debug("Redis → STOMP: channelId={} payload={}B", channelId, eventJson.length());
-
-        stompTemplate.convertAndSend(STOMP_PREFIX + channelId, eventJson);
     }
 }

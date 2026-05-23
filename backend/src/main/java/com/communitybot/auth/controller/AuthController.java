@@ -2,11 +2,14 @@ package com.communitybot.auth.controller;
 
 import com.communitybot.auth.domain.User;
 import com.communitybot.auth.dto.AuthTokenResponse;
+import com.communitybot.auth.dto.UpdateProfileRequest;
 import com.communitybot.auth.dto.UserProfileResponse;
 import com.communitybot.auth.service.JwtService;
 import com.communitybot.auth.service.AuthSessionService;
 import com.communitybot.auth.service.LocalAuthService;
 import com.communitybot.auth.service.UserService;
+import com.communitybot.organization.repository.OrgMemberRepository;
+import com.communitybot.workspace.repository.WorkspaceMemberRepository;
 import com.communitybot.shared.dto.ApiResponse;
 import com.communitybot.shared.security.CurrentUser;
 import jakarta.servlet.http.Cookie;
@@ -16,6 +19,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,10 +35,45 @@ public class AuthController {
     private final AuthSessionService  sessionService;
     private final LocalAuthService    localAuthService;
     private final UserService         userService;
+    private final OrgMemberRepository    orgMemberRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
     /** Returns the profile of the currently authenticated user. */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getMe(@CurrentUser UUID userId) {
+        User user = userService.getOrThrow(userId);
+        return ResponseEntity.ok(ApiResponse.ok(UserProfileResponse.from(user)));
+    }
+
+    /** Returns the full public profile of a user, including orgs and workspace roles. */
+    @Transactional(readOnly = true)
+    @GetMapping("/profile/{userId}")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(@PathVariable UUID userId) {
+        User user = userService.getOrThrow(userId);
+        var orgs = orgMemberRepository.findByUserId(userId).stream()
+                .map(m -> new UserProfileResponse.OrgMembership(
+                        m.getOrganization().getId(),
+                        m.getOrganization().getName(),
+                        m.getRole().name()))
+                .toList();
+        var workspaces = workspaceMemberRepository.findByUserId(userId).stream()
+                .map(m -> new UserProfileResponse.WorkspaceMembership(
+                        m.getWorkspace().getId(),
+                        m.getWorkspace().getName(),
+                        m.getWorkspace().getOrganization().getId(),
+                        m.getRoles().stream().map(r -> r.getName()).sorted().toList()))
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(UserProfileResponse.full(user, orgs, workspaces)));
+    }
+
+    /** Updates the current user's profile fields. */
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
+            @CurrentUser UUID userId,
+            @Valid @RequestBody UpdateProfileRequest req
+    ) {
+        userService.updateProfile(userId, req.statusMessage(), req.aboutMe(),
+                req.interests(), req.contactInfo());
         User user = userService.getOrThrow(userId);
         return ResponseEntity.ok(ApiResponse.ok(UserProfileResponse.from(user)));
     }
