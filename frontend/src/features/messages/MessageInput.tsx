@@ -1,4 +1,4 @@
-import { useState, useRef, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { Send } from 'lucide-react';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { cn } from '@/lib/utils';
@@ -94,18 +94,21 @@ export default function MessageInput({
 
       const { api } = await import('@/lib/api');
       const { data } = await api.post<{ ok: boolean; data: MessageResponse }>(`/channels/${channelId}/messages`, payload);
-      if (!connected) {
-        commitMessage(optimisticId, { ...data.data, pending: false });
-      }
+      commitMessage(optimisticId, { ...data.data, pending: false });
 
     } catch (error) {
       removeOptimisticMessage(optimisticId);
       console.error('Failed to send message', error);
     } finally {
       setSending(false);
-      textareaRef.current?.focus();
     }
   };
+
+  useEffect(() => {
+    if (!sending) {
+      textareaRef.current?.focus();
+    }
+  }, [sending]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
