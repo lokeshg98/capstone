@@ -2,6 +2,7 @@ package com.communitybot.auth.config;
 
 import com.communitybot.auth.service.CustomOAuth2UserService;
 import com.communitybot.auth.service.CustomOidcUserService;
+import com.communitybot.scheduling.config.N8nApiKeyAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +32,7 @@ public class SecurityConfig {
     private final CustomOidcUserService   oidcUserService;
     private final OAuth2SuccessHandler    successHandler;
     private final JwtAuthFilter           jwtAuthFilter;
+    private final N8nApiKeyAuthFilter     n8nApiKeyAuthFilter;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -43,13 +45,18 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/favicon.ico",
                                 "/oauth2/**", "/login/**",
                                 "/api/auth/login", "/api/auth/register",
+                                "/api/public/**",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
                                 "/ws/**",           // WebSocket handshake; auth happens in WebSocketAuthInterceptor
                                 "/actuator/health"
                         ).permitAll()
+                        .requestMatchers("/api/internal/n8n/**").hasRole("N8N")
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -59,6 +66,7 @@ public class SecurityConfig {
                         )
                         .successHandler(successHandler)
                 )
+                .addFilterBefore(n8nApiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

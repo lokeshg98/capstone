@@ -35,3 +35,22 @@ export async function joinChannel(wsId: string, channelId: string): Promise<Chan
   );
   return res.data.data;
 }
+
+export interface ChannelMemberResponse {
+  id:          string;
+  userId:      string;
+  displayName: string | null;
+  email:       string;
+  avatarUrl:   string | null;
+  joinedAt:    string;
+}
+
+export async function fetchChannelMembers(
+  wsId: string,
+  channelId: string,
+): Promise<ChannelMemberResponse[]> {
+  const res = await api.get<{ ok: boolean; data: ChannelMemberResponse[] }>(
+    `/workspaces/${wsId}/channels/${channelId}/members`,
+  );
+  return res.data.data;
+}

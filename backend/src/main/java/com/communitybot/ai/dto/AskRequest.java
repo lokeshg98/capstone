@@ -4,5 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record AskRequest(
-        @NotBlank @Size(max = 1000) String question
+        @NotBlank @Size(max = 1000) String question,
+        @Size(max = 64) String conversationId
 ) {}

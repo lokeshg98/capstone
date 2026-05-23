@@ -3,7 +3,10 @@ package com.communitybot.message.controller;
 import com.communitybot.message.dto.AddReactionRequest;
 import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.dto.SendMessageRequest;
+import com.communitybot.message.dto.ThreadSummaryResponse;
+import com.communitybot.message.dto.ThreadViewResponse;
 import com.communitybot.message.service.MessageService;
+import com.communitybot.message.service.ThreadSummaryService;
 import com.communitybot.realtime.dto.WsOutboundEvent;
 import com.communitybot.realtime.service.RealtimePublisher;
 import com.communitybot.shared.dto.ApiResponse;
@@ -27,8 +30,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MessageController {
 
-    private final MessageService   messageService;
-    private final RealtimePublisher realtimePublisher;
+    private final MessageService        messageService;
+    private final ThreadSummaryService  threadSummaryService;
+    private final RealtimePublisher     realtimePublisher;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<MessageResponse>>> list(
@@ -39,6 +43,34 @@ public class MessageController {
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
                 messageService.loadPage(channelId, userId, page, size)));
+    }
+
+    @GetMapping("/{messageId}/thread")
+    public ResponseEntity<ApiResponse<ThreadViewResponse>> getThread(
+            @PathVariable UUID channelId,
+            @PathVariable UUID messageId,
+            @CurrentUser UUID userId
+    ) {
+        ThreadViewResponse thread = messageService.loadThread(channelId, messageId, userId);
+        ThreadSummaryResponse summary = threadSummaryService.getSummary(messageId)
+                .map(s -> new ThreadSummaryResponse(
+                        s.summaryBody(), s.messageCount(), s.createdAt(), s.botMessageId()))
+                .orElse(null);
+        return ResponseEntity.ok(ApiResponse.ok(
+                new ThreadViewResponse(thread.root(), thread.replies(), summary)));
+    }
+
+    @GetMapping("/{messageId}/thread/summary")
+    public ResponseEntity<ApiResponse<ThreadSummaryResponse>> getThreadSummary(
+            @PathVariable UUID channelId,
+            @PathVariable UUID messageId,
+            @CurrentUser UUID userId
+    ) {
+        messageService.loadThread(channelId, messageId, userId);
+        return threadSummaryService.getSummary(messageId)
+                .map(s -> ResponseEntity.ok(ApiResponse.ok(new ThreadSummaryResponse(
+                        s.summaryBody(), s.messageCount(), s.createdAt(), s.botMessageId()))))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     }
 
     @PostMapping
@@ -69,8 +101,9 @@ public class MessageController {
             @Valid @RequestBody AddReactionRequest req,
             @CurrentUser UUID userId
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                messageService.addReaction(messageId, req.emoji(), userId)));
+        MessageResponse msg = messageService.addReaction(messageId, req.emoji(), userId);
+        realtimePublisher.publishToChannel(channelId, WsOutboundEvent.reactionUpdated(msg));
+        return ResponseEntity.ok(ApiResponse.ok(msg));
     }
 
     @DeleteMapping("/{messageId}/reactions/{emoji}")
@@ -80,7 +113,8 @@ public class MessageController {
             @PathVariable String emoji,
             @CurrentUser UUID userId
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                messageService.removeReaction(messageId, emoji, userId)));
+        MessageResponse msg = messageService.removeReaction(messageId, emoji, userId);
+        realtimePublisher.publishToChannel(channelId, WsOutboundEvent.reactionUpdated(msg));
+        return ResponseEntity.ok(ApiResponse.ok(msg));
     }
 }

@@ -13,5 +13,6 @@ public record MessageSentEvent(
         UUID   channelId,
         UUID   workspaceId,
         String body,
-        UUID   authorId   // needed so listeners can skip bot-authored messages
+        UUID   authorId,
+        UUID   threadRootId
 ) {}

@@ -1,28 +1,28 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
-import { Send } from 'lucide-react';
-import { useWebSocket } from '@/context/WebSocketContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Send, Smile } from 'lucide-react';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import FileUploadButton from './FileUploadButton';
 import { type AttachmentResponse } from './attachmentApi';
+import EmojiPicker from '@/features/emoji/EmojiPicker';
+import { type EmojiSearchResult } from '@/features/emoji/emojiApi';
 import type { MessageResponse } from './messageApi';
 
 interface Props {
-  channelId:   string;
-  channelName: string;
-  addOptimisticMessage: (msg: MessageResponse) => void;
-  commitMessage: (tempId: string, msg: MessageResponse) => void;
-  removeOptimisticMessage: (id: string) => void;
+  channelId:    string;
+  channelName:  string;
+  threadRootId?: string | null;
+  addOptimisticMessage?: (msg: MessageResponse) => void;
+  commitMessage?: (tempId: string, msg: MessageResponse) => void;
+  removeOptimisticMessage?: (id: string) => void;
   currentUser?: { id: string; displayName: string | null; avatarUrl: string | null } | null;
 }
 
-/**
- * Sends messages via WebSocket (primary) with automatic fallback to HTTP.
- * Supports optional file attachment: user picks a PDF/DOCX which is uploaded
- * immediately, then the returned attachment ID is bundled with the message send.
- */
 export default function MessageInput({
   channelId,
   channelName,
+  threadRootId = null,
   addOptimisticMessage,
   commitMessage,
   removeOptimisticMessage,
@@ -30,40 +30,68 @@ export default function MessageInput({
 }: Props) {
   const [body,              setBody]              = useState('');
   const [sending,           setSending]           = useState(false);
+  const [showEmoji,         setShowEmoji]         = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<AttachmentResponse | null>(null);
-  const { connected, publish } = useWebSocket();
+  const qc = useQueryClient();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const appendToCache = (newMsg: MessageResponse) => {
+    if (newMsg.threadRootId) {
+      qc.setQueryData(['thread', channelId, newMsg.threadRootId], (prev: unknown) => {
+        if (!prev || typeof prev !== 'object' || !('replies' in prev)) return prev;
+        const thread = prev as { root: MessageResponse; replies: MessageResponse[]; summary: unknown };
+        if (thread.replies.some((m) => m.id === newMsg.id)) return prev;
+        return { ...thread, replies: [...thread.replies, newMsg] };
+      });
+      qc.setQueryData<MessageResponse[]>(['messages', channelId], (prev = []) =>
+        prev.map((m) =>
+          m.id === newMsg.threadRootId
+            ? { ...m, replyCount: (m.replyCount ?? 0) + 1 }
+            : m,
+        ),
+      );
+      return;
+    }
+    qc.setQueryData<MessageResponse[]>(['messages', channelId], (prev = []) => {
+      if (prev.some((m) => m.id === newMsg.id)) return prev;
+      return [...prev, { ...newMsg, replyCount: newMsg.replyCount ?? 0 }];
+    });
+  };
+
+  const insertEmoji = (emoji: EmojiSearchResult) => {
+    setBody((prev) => prev + emoji.unicode);
+    textareaRef.current?.focus();
+  };
 
   const send = async () => {
     const trimmed = body.trim();
-    // Require at least a body OR an attachment
     if ((!trimmed && !pendingAttachment) || sending) return;
 
+    const draftText = trimmed || (pendingAttachment?.filename ?? '');
+    const payload = {
+      body:         draftText,
+      threadRootId: threadRootId ?? null,
+      attachmentId: pendingAttachment?.id ?? null,
+    };
+
+    const attachmentSnapshot = pendingAttachment;
+    const useOptimistic = !threadRootId && addOptimisticMessage && commitMessage && removeOptimisticMessage;
+    const optimisticId = useOptimistic ? makeTempId() : null;
+
     setSending(true);
-    const optimisticId = makeTempId();
-    try {
-      const draftText = trimmed || (pendingAttachment?.filename ?? '');
+    setBody('');
+    setPendingAttachment(null);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    if (useOptimistic && optimisticId) {
       const now = new Date().toISOString();
-      const actor = currentUser ?? {
-        id: 'me',
-        displayName: 'You',
-        avatarUrl: null,
-      };
-
-      setBody('');
-      setPendingAttachment(null);
-      if (textareaRef.current) textareaRef.current.style.height = 'auto';
-
+      const actor = currentUser ?? { id: 'me', displayName: 'You', avatarUrl: null };
       try {
         addOptimisticMessage({
           id: optimisticId,
           channelId,
           workspaceId: '',
-          author: {
-            id: actor.id,
-            displayName: actor.displayName,
-            avatarUrl: actor.avatarUrl,
-          },
+          author: { id: actor.id, displayName: actor.displayName, avatarUrl: actor.avatarUrl },
           body: draftText,
           threadRootId: null,
           status: 'ACTIVE',
@@ -71,49 +99,53 @@ export default function MessageInput({
           editedAt: null,
           createdAt: now,
           reactions: [],
-          attachment: pendingAttachment
+          replyCount: 0,
+          attachment: attachmentSnapshot
             ? {
-                id: pendingAttachment.id,
-                filename: pendingAttachment.filename,
-                mimeType: pendingAttachment.mimeType,
-                kind: pendingAttachment.kind,
-                sizeBytes: pendingAttachment.sizeBytes,
+                id: attachmentSnapshot.id,
+                filename: attachmentSnapshot.filename,
+                mimeType: attachmentSnapshot.mimeType,
+                kind: attachmentSnapshot.kind,
+                sizeBytes: attachmentSnapshot.sizeBytes,
               }
             : null,
           pending: true,
         });
-      } catch (optimisticError) {
-        console.error('Failed to add optimistic message', optimisticError);
+      } catch {
+        // ignore optimistic UI errors
       }
+    }
 
-      const payload = {
-        body:         draftText,
-        threadRootId: null,
-        attachmentId: pendingAttachment?.id ?? null,
-      };
-
-      const { api } = await import('@/lib/api');
-      const { data } = await api.post<{ ok: boolean; data: MessageResponse }>(`/channels/${channelId}/messages`, payload);
-      commitMessage(optimisticId, { ...data.data, pending: false });
-
-    } catch (error) {
-      removeOptimisticMessage(optimisticId);
-      console.error('Failed to send message', error);
+    try {
+      const res = await api.post<{ ok: boolean; data: MessageResponse }>(
+        `/channels/${channelId}/messages`,
+        payload,
+      );
+      if (useOptimistic && optimisticId && commitMessage) {
+        commitMessage(optimisticId, { ...res.data.data, pending: false });
+      } else {
+        appendToCache(res.data.data);
+      }
+    } catch {
+      if (useOptimistic && optimisticId && removeOptimisticMessage) {
+        removeOptimisticMessage(optimisticId);
+      }
+      setBody(trimmed);
+      if (attachmentSnapshot) setPendingAttachment(attachmentSnapshot);
     } finally {
       setSending(false);
+      textareaRef.current?.focus();
     }
   };
 
   useEffect(() => {
-    if (!sending) {
-      textareaRef.current?.focus();
-    }
+    if (!sending) textareaRef.current?.focus();
   }, [sending]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      send();
+      void send();
     }
   };
 
@@ -124,26 +156,20 @@ export default function MessageInput({
     el.style.height = Math.min(el.scrollHeight, 144) + 'px';
   };
 
-  const sendTyping = () => {
-    if (connected) publish(`/app/channels/${channelId}/typing`, {});
-  };
-
   const canSend = (body.trim().length > 0 || pendingAttachment !== null) && !sending;
 
   return (
-    <form
-      className="shrink-0 px-4 pb-4 pt-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void send();
-      }}
-    >
+    <div className="shrink-0 px-4 pb-4 pt-2 relative">
+      {showEmoji && (
+        <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} />
+      )}
+
       <div className={cn(
         'rounded-xl border bg-white transition-shadow',
         'focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent',
         'border-gray-300',
-      )}>
-        {/* Attachment chip sits above the text row */}
+      )}
+      >
         {pendingAttachment && (
           <div className="px-3 pt-2">
             <FileUploadButton
@@ -155,7 +181,6 @@ export default function MessageInput({
         )}
 
         <div className="flex items-end gap-2 px-3 py-2">
-          {/* Paperclip — only shown when no attachment is pending */}
           {!pendingAttachment && (
             <FileUploadButton
               pending={null}
@@ -164,20 +189,29 @@ export default function MessageInput({
             />
           )}
 
+          <button
+            type="button"
+            onClick={() => setShowEmoji((v) => !v)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100 shrink-0"
+            title="Insert emoji"
+          >
+            <Smile className="h-5 w-5" />
+          </button>
+
           <textarea
             ref={textareaRef}
             rows={1}
             value={body}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            onInput={sendTyping}
-            placeholder={`Message #${channelName}`}
+            placeholder={threadRootId ? 'Reply in thread…' : `Message #${channelName}`}
             className="flex-1 resize-none outline-none text-sm text-gray-900 placeholder-gray-400 bg-transparent max-h-36"
             disabled={sending}
           />
 
           <button
-            type="submit"
+            type="button"
+            onClick={() => void send()}
             disabled={!canSend}
             className={cn(
               'h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
@@ -191,13 +225,7 @@ export default function MessageInput({
           </button>
         </div>
       </div>
-
-      {!connected && (
-        <p className="mt-1 text-xs text-amber-600">
-          Reconnecting to real-time server… messages will be sent via HTTP.
-        </p>
-      )}
-    </form>
+    </div>
   );
 }
 

@@ -13,6 +13,7 @@ import com.communitybot.message.domain.MessageStatus;
 import com.communitybot.message.domain.Reaction;
 import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.dto.SendMessageRequest;
+import com.communitybot.message.dto.ThreadViewResponse;
 import com.communitybot.message.repository.MessageRepository;
 import com.communitybot.message.repository.ReactionRepository;
 import com.communitybot.shared.dto.PageResponse;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
 public class MessageService {
 
     private static final List<MessageStatus> HIDDEN_STATUSES =
-            List.of(MessageStatus.DELETED, MessageStatus.HIDDEN);
+            List.of(MessageStatus.DELETED, MessageStatus.HIDDEN, MessageStatus.FLAGGED);
 
     private final MessageRepository         messageRepository;
     private final ReactionRepository        reactionRepository;
@@ -78,7 +79,14 @@ public class MessageService {
 
         // Publish event for bot listener + moderation classifier (both run async after commit)
         eventPublisher.publishEvent(
-                new MessageSentEvent(saved.getId(), channelId, channel.getWorkspace().getId(), body, authorId));
+                new MessageSentEvent(
+                        saved.getId(),
+                        channelId,
+                        channel.getWorkspace().getId(),
+                        body,
+                        authorId,
+                        threadRoot != null ? threadRoot.getId() : null
+                ));
 
         return MessageResponse.from(saved, List.of(), authorId);
     }
@@ -96,10 +104,57 @@ public class MessageService {
                 .stream()
                 .collect(Collectors.groupingBy(r -> r.getMessage().getId()));
 
+        Map<UUID, Integer> replyCounts = countReplyCounts(ids);
+
         Page<MessageResponse> responsePage = msgPage.map(
-                m -> MessageResponse.from(m, byMsg.getOrDefault(m.getId(), List.of()), requesterId)
+                m -> MessageResponse.from(
+                        m,
+                        byMsg.getOrDefault(m.getId(), List.of()),
+                        requesterId,
+                        replyCounts.getOrDefault(m.getId(), 0)
+                )
         );
         return PageResponse.from(responsePage);
+    }
+
+    /** Root message plus all thread replies (oldest first). */
+    @Transactional(readOnly = true)
+    public ThreadViewResponse loadThread(UUID channelId, UUID threadRootId, UUID requesterId) {
+        channelService.requireChannelMember(channelId, requesterId);
+        Message root = getOrThrow(threadRootId);
+        if (!root.getChannel().getId().equals(channelId)) {
+            throw new AppException(ErrorCode.MESSAGE_NOT_FOUND);
+        }
+        if (root.getThreadRoot() != null) {
+            throw new AppException(ErrorCode.MESSAGE_FORBIDDEN);
+        }
+
+        List<Message> replies = messageRepository.findThreadReplies(threadRootId, HIDDEN_STATUSES);
+        List<UUID> allIds = new java.util.ArrayList<>(List.of(root.getId()));
+        replies.forEach(r -> allIds.add(r.getId()));
+
+        Map<UUID, List<Reaction>> byMsg = reactionRepository.findAllByMessageIdIn(allIds)
+                .stream()
+                .collect(Collectors.groupingBy(r -> r.getMessage().getId()));
+
+        MessageResponse rootDto = MessageResponse.from(
+                root, byMsg.getOrDefault(root.getId(), List.of()), requesterId, replies.size());
+        List<MessageResponse> replyDtos = replies.stream()
+                .map(m -> MessageResponse.from(m, byMsg.getOrDefault(m.getId(), List.of()), requesterId))
+                .toList();
+
+        return new ThreadViewResponse(rootDto, replyDtos, null);
+    }
+
+    private Map<UUID, Integer> countReplyCounts(List<UUID> rootIds) {
+        if (rootIds.isEmpty()) {
+            return Map.of();
+        }
+        return messageRepository.countRepliesByRootIds(rootIds, HIDDEN_STATUSES).stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> ((Number) row[1]).intValue()
+                ));
     }
 
     /** Soft-delete a message (author or workspace moderator). */

@@ -22,3 +22,12 @@ export async function createOrg(data: CreateOrgRequest): Promise<OrgResponse> {
   const res = await api.post<{ ok: boolean; data: OrgResponse }>('/organizations', data);
   return res.data.data;
 }
+
+export async function joinOrgBySlug(slug: string): Promise<OrgResponse> {
+  const res = await api.post<{ ok: boolean; data: OrgResponse }>('/organizations/join', { slug });
+  return res.data.data;
+}
+
+export async function deleteOrg(orgId: string, confirmSlug: string): Promise<void> {
+  await api.delete(`/organizations/${orgId}`, { data: { confirmSlug } });
+}

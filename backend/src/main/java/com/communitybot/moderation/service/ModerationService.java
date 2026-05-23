@@ -1,11 +1,15 @@
 package com.communitybot.moderation.service;
 
 import com.communitybot.message.domain.Message;
+import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.repository.MessageRepository;
+import com.communitybot.message.repository.ReactionRepository;
 import com.communitybot.moderation.domain.FlagStatus;
 import com.communitybot.moderation.domain.ModerationFlag;
 import com.communitybot.moderation.dto.ModerationFlagResponse;
 import com.communitybot.moderation.repository.ModerationFlagRepository;
+import com.communitybot.realtime.dto.WsOutboundEvent;
+import com.communitybot.realtime.service.RealtimePublisher;
 import com.communitybot.shared.exception.AppException;
 import com.communitybot.shared.exception.ErrorCode;
 import com.communitybot.workspace.service.WorkspaceService;
@@ -24,18 +28,21 @@ public class ModerationService {
 
     private final ModerationFlagRepository flagRepository;
     private final MessageRepository        messageRepository;
+    private final ReactionRepository       reactionRepository;
     private final WorkspaceService         workspaceService;
+    private final RealtimePublisher        realtimePublisher;
 
-    /** Creates a PENDING flag for a message. Called by {@link com.communitybot.moderation.event.MessageFlagListener}. */
+    /**
+     * Flags a message, hides it from all channel members, and broadcasts the update.
+     */
     @Transactional
     public void flagMessage(UUID messageId, UUID workspaceId, ContentClassifierService.ClassificationResult result) {
-        // Guard: don't double-flag the same message
         if (flagRepository.existsByMessageId(messageId)) return;
 
         Message msg = messageRepository.findById(messageId).orElse(null);
         if (msg == null) return;
 
-        msg.flag();
+        msg.hide();
 
         flagRepository.save(
                 ModerationFlag.builder()
@@ -46,7 +53,10 @@ public class ModerationService {
                         .llmConfidence(result.confidence())
                         .build()
         );
-        log.info("Message {} flagged: reason={} confidence={:.2f}", messageId, result.flagReason(), result.confidence());
+
+        publishMessageUpdate(msg);
+        log.info("Message {} hidden and flagged: reason={} confidence={:.2f} source={}",
+                messageId, result.flagReason(), result.confidence(), result.source());
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +73,7 @@ public class ModerationService {
         ModerationFlag flag = getOrThrow(flagId);
         workspaceService.requireModeratorOrAdmin(flag.getWorkspaceId(), reviewerId);
         flag.approve(reviewerId);
+        publishMessageUpdate(flag.getMessage());
         return ModerationFlagResponse.from(flag);
     }
 
@@ -71,10 +82,16 @@ public class ModerationService {
         ModerationFlag flag = getOrThrow(flagId);
         workspaceService.requireModeratorOrAdmin(flag.getWorkspaceId(), reviewerId);
         flag.remove(reviewerId);
+        publishMessageUpdate(flag.getMessage());
         return ModerationFlagResponse.from(flag);
     }
 
-    // -------------------------------------------------------------------------
+    private void publishMessageUpdate(Message msg) {
+        List<com.communitybot.message.domain.Reaction> reactions =
+                reactionRepository.findAllByMessageIdIn(List.of(msg.getId()));
+        MessageResponse response = MessageResponse.from(msg, reactions, null);
+        realtimePublisher.publishToChannel(msg.getChannel().getId(), WsOutboundEvent.messageUpdated(response));
+    }
 
     private ModerationFlag getOrThrow(UUID flagId) {
         return flagRepository.findById(flagId)

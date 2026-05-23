@@ -43,6 +43,9 @@ public class Workspace extends BaseEntity {
     @Column(name = "welcome_message_template", columnDefinition = "TEXT")
     private String welcomeMessageTemplate;
 
+    @Column(name = "community_guidelines", columnDefinition = "TEXT")
+    private String communityGuidelines;
+
     public void update(String name, String slug, String description) {
         this.name        = name;
         this.slug        = slug;
@@ -55,5 +58,9 @@ public class Workspace extends BaseEntity {
 
     public void setWelcomeMessageTemplate(String template) {
         this.welcomeMessageTemplate = template;
+    }
+
+    public void setCommunityGuidelines(String guidelines) {
+        this.communityGuidelines = guidelines;
     }
 }

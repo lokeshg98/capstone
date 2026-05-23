@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Bot — AI Community Platform</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; color: #111827; background: linear-gradient(to bottom, #f8fafc, #fff); line-height: 1.5; }
+    a { color: #4f46e5; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
+    header { border-bottom: 1px solid #e5e7eb; background: rgba(255,255,255,.9); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 10; }
+    .nav { display: flex; align-items: center; justify-content: space-between; height: 3.5rem; }
+    .logo { display: flex; align-items: center; gap: .5rem; font-weight: 600; }
+    .logo-mark { width: 2rem; height: 2rem; border-radius: .5rem; background: #4f46e5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; }
+    .hero { text-align: center; padding: 4rem 0 2.5rem; }
+    .tag { color: #4f46e5; font-size: .875rem; font-weight: 500; margin-bottom: .75rem; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; margin-bottom: 1rem; }
+    .summary { color: #4b5563; font-size: 1.125rem; max-width: 42rem; margin: 0 auto 2rem; }
+    .oauth { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; margin-bottom: .75rem; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; min-width: 220px; padding: .75rem 1.25rem; border-radius: .5rem; font-size: .875rem; font-weight: 500; border: 1px solid #d1d5db; background: #fff; color: #374151; cursor: pointer; text-decoration: none; }
+    .btn:hover { background: #f9fafb; text-decoration: none; }
+    .btn-dark { background: #111827; color: #fff; border-color: #111827; }
+    .btn-dark:hover { background: #1f2937; }
+    .hint { font-size: .75rem; color: #9ca3af; }
+    section { padding: 2.5rem 0; }
+    h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .card { border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; padding: 1.25rem; }
+    .card h3 { font-size: 1rem; margin-bottom: .35rem; }
+    .card p { font-size: .875rem; color: #4b5563; }
+    .demo { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 1rem; padding: 1.5rem; }
+    .demo-row { display: flex; gap: .5rem; margin-top: .75rem; flex-wrap: wrap; }
+    .demo-row input { flex: 1; min-width: 200px; padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: .5rem; font-size: .875rem; }
+    .demo-row button { padding: .5rem 1rem; background: #4f46e5; color: #fff; border: 0; border-radius: .5rem; font-size: .875rem; cursor: pointer; }
+    .answer { margin-top: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: .5rem; font-size: .875rem; white-space: pre-wrap; display: none; }
+    details { border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; padding: 1rem; margin-bottom: .75rem; }
+    summary { cursor: pointer; font-weight: 500; }
+    details p { margin-top: .75rem; font-size: .875rem; color: #4b5563; }
+    .newsletter { background: #111827; color: #fff; border-radius: 1rem; padding: 2rem; }
+    .newsletter p { color: #d1d5db; font-size: .875rem; margin-bottom: 1rem; }
+    .newsletter input { flex: 1; padding: .5rem .75rem; border: 0; border-radius: .5rem; font-size: .875rem; }
+    .newsletter button { padding: .5rem 1rem; background: #fff; color: #111827; border: 0; border-radius: .5rem; font-weight: 500; cursor: pointer; }
+    .newsletter form { display: flex; gap: .5rem; flex-wrap: wrap; max-width: 28rem; }
+    .msg { margin-top: .75rem; font-size: .875rem; }
+    footer { border-top: 1px solid #e5e7eb; padding: 2rem 0; text-align: center; font-size: .75rem; color: #9ca3af; }
+    .app-link { font-size: .875rem; color: #4b5563; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <div class="logo"><div class="logo-mark">CB</div><span id="site-title">Community Bot</span></div>
+      <div>
+        <a href="#features">Features</a> ·
+        <a href="#faq">FAQ</a> ·
+        <a href="http://localhost:3000" class="app-link">React app ↗</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="tag" id="tagline">Loading…</p>
+      <h1 id="hero-title">Community Bot</h1>
+      <p class="summary" id="summary">AI-powered Slack-style community chat with moderation, RAG, and LangGraph4j agent flows.</p>
+      <div class="oauth" id="login">
+        <a class="btn" href="/oauth2/authorization/google">Continue with Google</a>
+        <a class="btn btn-dark" href="/oauth2/authorization/github">Continue with GitHub</a>
+      </div>
+      <p class="hint">Sign in to create organisations, join workspaces, and chat in real time.</p>
+    </section>
+
+    <section id="features">
+      <h2>Platform features</h2>
+      <div class="grid" id="feature-grid"></div>
+    </section>
+
+    <section>
+      <div class="demo">
+        <h2 style="font-size:1.125rem;margin-bottom:.25rem;">Try the bot — no login required</h2>
+        <p style="font-size:.875rem;color:#4b5563;">Ask about Community Bot. LangGraph4j public flow + FAQ search.</p>
+        <div class="demo-row">
+          <input id="bot-q" placeholder="e.g. How does moderation work?" />
+          <button type="button" id="bot-ask">Ask</button>
+        </div>
+        <div class="answer" id="bot-a"></div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>Frequently asked questions</h2>
+      <div id="faq-list"></div>
+    </section>
+
+    <section>
+      <div class="newsletter">
+        <h2 style="font-size:1.125rem;margin-bottom:.25rem;">Stay in the loop</h2>
+        <p>Product updates and community tips. No spam.</p>
+        <form id="newsletter-form">
+          <input type="email" name="email" required placeholder="you@example.com" />
+          <button type="submit">Subscribe</button>
+        </form>
+        <p class="msg" id="newsletter-msg" hidden></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>Community Bot · LangGraph4j member &amp; admin flows · <a href="http://localhost:3000">Full app at :3000</a></footer>
+
+  <script>
+    async function api(path, opts) {
+      const r = await fetch('/api/public' + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.message || 'Request failed');
+      return j.data;
+    }
+
+    api('/platform').then(p => {
+      document.getElementById('site-title').textContent = p.title;
+      document.getElementById('hero-title').textContent = p.title;
+      document.getElementById('tagline').textContent = p.tagline;
+      document.getElementById('summary').textContent = p.summary;
+      const grid = document.getElementById('feature-grid');
+      p.features.forEach(f => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = '<h3>' + f.title + '</h3><p>' + f.description + '</p>';
+        grid.appendChild(el);
+      });
+    }).catch(() => {});
+
+    api('/faq?limit=6').then(entries => {
+      const list = document.getElementById('faq-list');
+      entries.forEach(e => {
+        const d = document.createElement('details');
+        d.innerHTML = '<summary>' + e.question + '</summary><p>' + e.answer + '</p>';
+        list.appendChild(d);
+      });
+    }).catch(() => {});
+
+    document.getElementById('bot-ask').onclick = async () => {
+      const q = document.getElementById('bot-q').value.trim();
+      if (!q) return;
+      const box = document.getElementById('bot-a');
+      box.style.display = 'block';
+      box.textContent = 'Thinking…';
+      try {
+        const res = await api('/agent/ask', { method: 'POST', body: JSON.stringify({ question: q }) });
+        box.textContent = res.answer;
+      } catch (e) {
+        box.textContent = 'Demo bot unavailable. Restart the backend.';
+      }
+    };
+
+    document.getElementById('newsletter-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const email = e.target.email.value.trim();
+      const msg = document.getElementById('newsletter-msg');
+      msg.hidden = false;
+      try {
+        await api('/newsletter', { method: 'POST', body: JSON.stringify({ email }) });
+        msg.textContent = 'Thanks — you are subscribed!';
+        msg.style.color = '#86efac';
+        e.target.reset();
+      } catch (err) {
+        msg.textContent = err.message || 'Subscription failed';
+        msg.style.color = '#fcd34d';
+      }
+    };
+  </script>
+</body>
+</html>

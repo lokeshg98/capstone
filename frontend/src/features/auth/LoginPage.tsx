@@ -66,6 +66,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-6 px-6 py-10">
+        <p className="text-center">
+          <a href="/" className="text-sm text-brand-600 hover:underline">← Back to home</a>
+        </p>
         <div className="text-center">
           <div className="mx-auto h-12 w-12 rounded-xl bg-brand-600 flex items-center justify-center">
             <span className="text-white text-xl font-bold">CB</span>

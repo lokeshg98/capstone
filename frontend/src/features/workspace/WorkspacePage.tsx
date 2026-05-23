@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Hash, Plus, ChevronLeft, MessageSquare, Bot, ShieldAlert, Settings } from 'lucide-react';
-import { fetchChannels, createChannel, type ChannelResponse } from '@/features/channels/channelApi';
+import { fetchChannels, createChannel, joinChannel, type ChannelResponse } from '@/features/channels/channelApi';
 import { fetchChannelMembers, type ChannelMemberResponse } from '@/features/messages/memberApi';
 import { useAuthStore } from '@/features/auth/useAuthStore';
 import ChatArea from '@/features/messages/ChatArea';
@@ -12,6 +12,7 @@ import WorkspaceSettings from './WorkspaceSettings';
 import MemberList from '@/features/messages/MemberList';
 import ProfilePanel from '@/features/messages/ProfilePanel';
 import { cn } from '@/lib/utils';
+import { AiUsageSummary } from '@/features/dashboard/AiUsageSummary';
 
 type ActiveView =
   | { kind: 'channel'; channelId: string }
@@ -48,9 +49,9 @@ export default function WorkspacePage() {
     return me?.roles.includes('Admin') ?? false;
   }, [currentUser, members]);
 
-  // Auto-navigate to the first channel when none is selected
-  if (!channelId && channels.length > 0 && (!activeView || activeView.kind === 'channel')) {
-    navigate(`/workspaces/${wsId}/channels/${channels[0].id}`, { replace: true });
+  const firstJoined = channels.find((c) => c.isMember) ?? channels[0];
+  if (!channelId && firstJoined && (!activeView || activeView.kind === 'channel')) {
+    navigate(`/workspaces/${wsId}/channels/${firstJoined.id}`, { replace: true });
   }
 
   const resolvedView: ActiveView | null =
@@ -62,9 +63,17 @@ export default function WorkspacePage() {
 
   const activeChannel = channels.find((c) => c.id === channelId) ?? null;
 
-  const handleChannelClick = (id: string) => {
-    setActiveView({ kind: 'channel', channelId: id });
-    navigate(`/workspaces/${wsId}/channels/${id}`);
+  const handleChannelClick = async (ch: ChannelResponse) => {
+    if (!ch.isMember) {
+      try {
+        await joinChannel(wsId!, ch.id);
+        await refetchChannels();
+      } catch {
+        return;
+      }
+    }
+    setActiveView({ kind: 'channel', channelId: ch.id });
+    navigate(`/workspaces/${wsId}/channels/${ch.id}`);
     setSelectedUserId(null);
   };
 
@@ -98,13 +107,16 @@ export default function WorkspacePage() {
         ) : resolvedView?.kind === 'ask-bot' ? (
           <AskBotPanel workspaceId={wsId!} />
         ) : activeChannel ? (
-          <ChatArea channel={activeChannel} showMembers={showMembers} onToggleMembers={() => setShowMembers((v) => !v)} />
+          <ChatArea
+            channel={activeChannel}
+            showMembers={showMembers}
+            onToggleMembers={() => setShowMembers((v) => !v)}
+          />
         ) : (
           <EmptyState />
         )}
       </main>
 
-      {/* Right-side panels */}
       {resolvedView?.kind === 'channel' && showMembers && activeChannel && (
         <MemberList
           workspaceId={wsId!}
@@ -128,8 +140,6 @@ export default function WorkspacePage() {
   );
 }
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
-
 function WorkspaceSidebar({
   wsId,
   channels,
@@ -149,7 +159,7 @@ function WorkspaceSidebar({
   isBotActive:        boolean;
   isModerationActive: boolean;
   isSettingsActive:   boolean;
-  onChannelClick:     (id: string) => void;
+  onChannelClick:     (ch: ChannelResponse) => void;
   onAskBotClick:      () => void;
   onModerationClick:  () => void;
   onSettingsClick:    () => void;
@@ -194,16 +204,23 @@ function WorkspaceSidebar({
         {channels.map((ch) => (
           <button
             key={ch.id}
-            onClick={() => onChannelClick(ch.id)}
+            type="button"
+            onClick={() => void onChannelClick(ch)}
             className={cn(
               'w-full flex items-center gap-2 px-3 py-1.5 rounded mx-1 text-sm transition-colors text-left',
               ch.id === activeChannelId
                 ? 'bg-brand-600 text-white'
-                : 'text-gray-300 hover:bg-gray-800',
+                : ch.isMember
+                  ? 'text-gray-300 hover:bg-gray-800'
+                  : 'text-gray-500 hover:bg-gray-800 border border-dashed border-gray-600',
             )}
+            title={ch.isMember ? undefined : 'Click to join this channel'}
           >
             <Hash className="h-3.5 w-3.5 shrink-0 opacity-70" />
-            <span className="truncate">{ch.name}</span>
+            <span className="truncate flex-1">{ch.name}</span>
+            {!ch.isMember && (
+              <span className="text-[10px] uppercase tracking-wide opacity-70 shrink-0">Join</span>
+            )}
           </button>
         ))}
 
@@ -224,37 +241,40 @@ function WorkspaceSidebar({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-gray-700 p-2 space-y-1">
-        <button
-          onClick={onAskBotClick}
-          className={cn(
-            'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors',
-            isBotActive ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-gray-800',
-          )}
-        >
-          <Bot className="h-4 w-4 shrink-0" />
-          <span className="font-medium">Ask Bot</span>
-        </button>
-        <button
-          onClick={onModerationClick}
-          className={cn(
-            'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors',
-            isModerationActive ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-gray-800',
-          )}
-        >
-          <ShieldAlert className="h-4 w-4 shrink-0" />
-          <span className="font-medium">Moderation</span>
-        </button>
-        <button
-          onClick={onSettingsClick}
-          className={cn(
-            'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors',
-            isSettingsActive ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-gray-800',
-          )}
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          <span className="font-medium">Settings</span>
-        </button>
+      <div className="shrink-0 border-t border-gray-700 flex flex-col">
+        <AiUsageSummary variant="sidebar" />
+        <div className="p-2 space-y-1">
+          <button
+            onClick={onAskBotClick}
+            className={cn(
+              'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors',
+              isBotActive ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-gray-800',
+            )}
+          >
+            <Bot className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Ask Bot</span>
+          </button>
+          <button
+            onClick={onModerationClick}
+            className={cn(
+              'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors',
+              isModerationActive ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-gray-800',
+            )}
+          >
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Moderation</span>
+          </button>
+          <button
+            onClick={onSettingsClick}
+            className={cn(
+              'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors',
+              isSettingsActive ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-gray-800',
+            )}
+          >
+            <Settings className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Settings</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

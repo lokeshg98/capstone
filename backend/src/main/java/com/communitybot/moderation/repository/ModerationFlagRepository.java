@@ -15,4 +15,8 @@ public interface ModerationFlagRepository extends JpaRepository<ModerationFlag, 
     List<ModerationFlag> findAllByWorkspaceIdOrderByCreatedAtDesc(UUID workspaceId);
 
     boolean existsByMessageId(UUID messageId);
+
+    long countByWorkspaceIdAndStatus(UUID workspaceId, FlagStatus status);
+
+    long countByWorkspaceIdAndCreatedAtGreaterThanEqual(UUID workspaceId, java.time.Instant since);
 }

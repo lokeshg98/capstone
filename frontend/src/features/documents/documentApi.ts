@@ -27,9 +27,22 @@ export async function fetchDocuments(workspaceId: string): Promise<FaqDocumentRe
   return res.data.data;
 }
 
+export interface AskCitation {
+  documentTitle: string;
+  chunkText:     string;
+  chunkIndex:    number;
+}
+
+export interface AskStep {
+  kind:   string;
+  detail: string;
+}
+
 export interface AskResponse {
   answer:       string;
   sourceChunks: number;
+  citations?:   AskCitation[];
+  steps?:       AskStep[];
 }
 
 export async function askBot(workspaceId: string, question: string): Promise<AskResponse> {

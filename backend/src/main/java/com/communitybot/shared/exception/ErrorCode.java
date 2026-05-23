@@ -22,6 +22,10 @@ public enum ErrorCode {
     ORG_SLUG_TAKEN("Organisation slug is already taken", HttpStatus.CONFLICT),
     ORG_ACCESS_DENIED("You are not a member of this organisation", HttpStatus.FORBIDDEN),
     ORG_ALREADY_MEMBER("User is already a member of this organisation", HttpStatus.CONFLICT),
+    ORG_DELETE_FORBIDDEN("Only the organisation creator can delete it", HttpStatus.FORBIDDEN),
+    ORG_DELETE_CONFIRMATION_MISMATCH(
+            "Confirmation slug does not match — type the organisation slug exactly to delete",
+            HttpStatus.BAD_REQUEST),
 
     // --- Workspace ---
     WORKSPACE_NOT_FOUND("Workspace not found", HttpStatus.NOT_FOUND),
@@ -60,6 +64,10 @@ public enum ErrorCode {
     DOCUMENT_NOT_FOUND("FAQ document not found", HttpStatus.NOT_FOUND),
     DOCUMENT_INGESTION_FAILED("Document ingestion failed; check that the file contains readable text", HttpStatus.UNPROCESSABLE_ENTITY),
     RAG_RATE_LIMIT_EXCEEDED("Daily AI query limit reached for this workspace", HttpStatus.TOO_MANY_REQUESTS),
+    PROPOSED_ACTION_NOT_FOUND("Proposed action not found or already processed", HttpStatus.NOT_FOUND),
+
+    // --- Public site ---
+    NEWSLETTER_ALREADY_SUBSCRIBED("This email is already subscribed", HttpStatus.CONFLICT),
 
     // --- Roles ---
     ROLE_NOT_FOUND("Role not found", HttpStatus.NOT_FOUND),

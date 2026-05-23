@@ -10,7 +10,11 @@ import {
 import { Client, type IMessage } from '@stomp/stompjs';
 import { useAuthStore } from '@/features/auth/useAuthStore';
 
-const WS_URL = (import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8080').replace(/^http/, 'ws') + '/ws';
+/** Same-origin WebSocket via Vite proxy (/ws → backend). */
+function wsUrl(): string {
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${window.location.host}/ws`;
+}
 
 interface WebSocketContextValue {
   connected: boolean;
@@ -35,7 +39,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     if (!token) return;
 
     const client = new Client({
-      webSocketFactory: () => new WebSocket(WS_URL),
+      webSocketFactory: () => new WebSocket(wsUrl()),
       connectHeaders:   { Authorization: `Bearer ${token}` },
       onConnect:        () => setConnected(true),
       onDisconnect:     () => setConnected(false),

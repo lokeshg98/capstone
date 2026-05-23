@@ -4,11 +4,13 @@ import MessageItem from './MessageItem';
 import { useAuthStore } from '@/features/auth/useAuthStore';
 
 interface Props {
-  messages:  MessageResponse[];
-  isLoading: boolean;
+  messages:     MessageResponse[];
+  channelId:    string;
+  isLoading:    boolean;
+  onOpenThread: (message: MessageResponse) => void;
 }
 
-export default function MessageList({ messages, isLoading }: Props) {
+export default function MessageList({ messages, channelId, isLoading, onOpenThread }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const myId      = useAuthStore((s) => s.user?.id);
 
@@ -30,7 +32,13 @@ export default function MessageList({ messages, isLoading }: Props) {
   return (
     <div className="flex-1 overflow-y-auto py-2">
       {messages.map((msg) => (
-        <MessageItem key={msg.id} message={msg} isOwn={msg.author.id === myId} />
+        <MessageItem
+          key={msg.id}
+          message={msg}
+          channelId={channelId}
+          isOwn={msg.author.id === myId}
+          onOpenThread={onOpenThread}
+        />
       ))}
       <div ref={bottomRef} />
     </div>

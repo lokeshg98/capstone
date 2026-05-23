@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import HomePage       from '@/features/public/HomePage';
 import LoginPage      from '@/features/auth/LoginPage';
 import AuthCallback   from '@/features/auth/AuthCallback';
 import DashboardPage  from '@/features/dashboard/DashboardPage';
 import WorkspacePage  from '@/features/workspace/WorkspacePage';
+import ProfilePage    from '@/features/profile/ProfilePage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function App() {
@@ -10,12 +12,14 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public */}
+        <Route path="/"              element={<HomePage />} />
         <Route path="/login"         element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Protected — redirects to /login if not authenticated */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile"   element={<ProfilePage />} />
 
           {/* Workspace: channel is optional — WorkspacePage auto-selects the first one */}
           <Route path="/workspaces/:wsId"                        element={<WorkspacePage />} />
@@ -23,7 +27,7 @@ export default function App() {
         </Route>
 
         {/* Default redirect */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
