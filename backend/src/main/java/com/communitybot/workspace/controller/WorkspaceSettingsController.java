@@ -111,4 +111,22 @@ public class WorkspaceSettingsController {
         wsService.removeRoleFromMember(wsId, memberId, roleId, userId);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
+
+    @GetMapping("/community-guidelines")
+    public ResponseEntity<ApiResponse<String>> getCommunityGuidelines(
+            @PathVariable UUID wsId,
+            @CurrentUser UUID userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(wsService.getCommunityGuidelines(wsId, userId)));
+    }
+
+    @PutMapping("/community-guidelines")
+    public ResponseEntity<ApiResponse<Void>> updateCommunityGuidelines(
+            @PathVariable UUID wsId,
+            @RequestBody Map<String, @Size(max = 10000) String> body,
+            @CurrentUser UUID userId
+    ) {
+        wsService.updateCommunityGuidelines(wsId, userId, body.get("guidelines"));
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
 }

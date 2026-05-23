@@ -34,6 +34,20 @@ export interface MessageResponse {
   reactions:    ReactionSummary[];
   attachment:   AttachmentInfo | null;
   pending?:     boolean;
+  replyCount:   number;
+}
+
+export interface ThreadSummaryResponse {
+  summaryBody:  string;
+  messageCount: number;
+  createdAt:    string;
+  botMessageId: string | null;
+}
+
+export interface ThreadViewResponse {
+  root:    MessageResponse;
+  replies: MessageResponse[];
+  summary: ThreadSummaryResponse | null;
 }
 
 export interface WsOutboundEvent {
@@ -64,13 +78,42 @@ export async function fetchMessages(
     `/channels/${channelId}/messages`,
     { params: { page, size } },
   );
+  const data = res.data.data;
+  return {
+    ...data,
+    content: data.content.map((m) => ({ ...m, replyCount: m.replyCount ?? 0 })),
+  };
+}
+
+export async function fetchThread(
+  channelId: string,
+  messageId: string,
+): Promise<ThreadViewResponse> {
+  const res = await api.get<{ ok: boolean; data: ThreadViewResponse }>(
+    `/channels/${channelId}/messages/${messageId}/thread`,
+  );
   return res.data.data;
 }
 
-export async function addReaction(messageId: string, emoji: string): Promise<MessageResponse> {
+export async function addReaction(
+  channelId: string,
+  messageId: string,
+  emoji: string,
+): Promise<MessageResponse> {
   const res = await api.post<{ ok: boolean; data: MessageResponse }>(
-    `/channels/x/messages/${messageId}/reactions`,   // channelId is in path but unused server-side
+    `/channels/${channelId}/messages/${messageId}/reactions`,
     { emoji },
+  );
+  return res.data.data;
+}
+
+export async function removeReaction(
+  channelId: string,
+  messageId: string,
+  emoji: string,
+): Promise<MessageResponse> {
+  const res = await api.delete<{ ok: boolean; data: MessageResponse }>(
+    `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
   );
   return res.data.data;
 }

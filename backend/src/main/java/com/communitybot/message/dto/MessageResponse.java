@@ -22,7 +22,8 @@ public record MessageResponse(
         Instant           editedAt,
         Instant           createdAt,
         List<ReactionSummary> reactions,
-        AttachmentInfo    attachment     // null for text-only messages
+        AttachmentInfo    attachment,    // null for text-only messages
+        int               replyCount     // thread replies; 0 for messages in a thread
 ) {
     public record AuthorInfo(UUID id, String displayName, String avatarUrl) {}
 
@@ -32,6 +33,10 @@ public record MessageResponse(
 
     /** Builds a response for a single message with pre-loaded reactions. */
     public static MessageResponse from(Message msg, List<Reaction> reactions, UUID requesterId) {
+        return from(msg, reactions, requesterId, 0);
+    }
+
+    public static MessageResponse from(Message msg, List<Reaction> reactions, UUID requesterId, int replyCount) {
         Map<String, List<Reaction>> grouped = reactions.stream()
                 .collect(Collectors.groupingBy(Reaction::getEmoji));
 
@@ -66,7 +71,8 @@ public record MessageResponse(
                 msg.getEditedAt(),
                 msg.getCreatedAt(),
                 summaries,
-                attachmentInfo
+                attachmentInfo,
+                replyCount
         );
     }
 }

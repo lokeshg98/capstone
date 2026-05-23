@@ -8,6 +8,7 @@ import com.communitybot.organization.service.OrganizationService;
 import com.communitybot.shared.exception.AppException;
 import com.communitybot.shared.exception.ErrorCode;
 import com.communitybot.shared.util.SlugGenerator;
+import com.communitybot.workspace.config.WelcomeProperties;
 import com.communitybot.workspace.domain.Workspace;
 import com.communitybot.workspace.domain.WorkspaceMember;
 import com.communitybot.workspace.domain.WorkspaceRoleEntity;
@@ -42,6 +43,7 @@ public class WorkspaceService {
     private final UserService                 userService;
     private final ChannelService              channelService;
     private final ApplicationEventPublisher   eventPublisher;
+    private final WelcomeProperties         welcomeProperties;
 
     @Transactional
     public WorkspaceResponse create(UUID orgId, CreateWorkspaceRequest req, UUID creatorId) {
@@ -56,6 +58,7 @@ public class WorkspaceService {
                         .name(req.name())
                         .slug(slug)
                         .description(req.description())
+                        .welcomeMessageTemplate(welcomeProperties.getDefaultTemplate())
                         .build()
         );
 
@@ -218,6 +221,17 @@ public class WorkspaceService {
         member.removeRole(role);
     }
 
+    /** Adds the user to every workspace in the org (used after org self-join). */
+    @Transactional
+    public void joinAllInOrg(UUID orgId, UUID userId) {
+        orgService.requireMembership(orgId, userId);
+        for (Workspace ws : wsRepository.findAllByOrganizationIdOrderByNameAsc(orgId)) {
+            if (!memberRepository.existsByWorkspaceIdAndUserId(ws.getId(), userId)) {
+                joinWorkspace(orgId, ws.getId(), userId);
+            }
+        }
+    }
+
     // ── Welcome message ───────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -231,6 +245,19 @@ public class WorkspaceService {
         requireModeratorOrAdmin(wsId, userId);
         Workspace ws = getOrThrow(wsId);
         ws.setWelcomeMessageTemplate(template);
+    }
+
+    @Transactional(readOnly = true)
+    public String getCommunityGuidelines(UUID wsId, UUID userId) {
+        requireMembership(wsId, userId);
+        Workspace ws = getOrThrow(wsId);
+        return ws.getCommunityGuidelines();
+    }
+
+    @Transactional
+    public void updateCommunityGuidelines(UUID wsId, UUID userId, String guidelines) {
+        requireModeratorOrAdmin(wsId, userId);
+        getOrThrow(wsId).setCommunityGuidelines(guidelines);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

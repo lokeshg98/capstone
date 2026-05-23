@@ -1,5 +1,5 @@
 [versions]
-springBoot                = "3.5.0"
+springBoot                = "3.5.13"
 springDependencyManagement = "1.1.7"
 jjwt                      = "0.12.6"
 lombok                    = "1.18.46"
@@ -8,6 +8,8 @@ minio                     = "8.5.11"
 tika                      = "2.9.2"
 pdfbox                    = "3.0.3"
 poi                       = "5.3.0"
+langchain4j-bom           = "1.15.0"
+langgraph4j-bom           = "1.8.13"
 
 [libraries]
 spring-boot-starter-web          = { module = "org.springframework.boot:spring-boot-starter-web" }
@@ -32,6 +34,14 @@ minio                            = { module = "io.minio:minio",                 
 tika-core                        = { module = "org.apache.tika:tika-core",        version.ref = "tika" }
 pdfbox                           = { module = "org.apache.pdfbox:pdfbox",         version.ref = "pdfbox" }
 poi-ooxml                        = { module = "org.apache.poi:poi-ooxml",         version.ref = "poi" }
+langchain4j-bom                  = { module = "dev.langchain4j:langchain4j-bom",    version.ref = "langchain4j-bom" }
+langchain4j                      = { module = "dev.langchain4j:langchain4j" }
+langchain4j-open-ai             = { module = "dev.langchain4j:langchain4j-open-ai" }
+langchain4j-web-search-tavily   = { module = "dev.langchain4j:langchain4j-web-search-engine-tavily" }
+langgraph4j-bom                 = { module = "org.bsc.langgraph4j:langgraph4j-bom", version.ref = "langgraph4j-bom" }
+langgraph4j-core                = { module = "org.bsc.langgraph4j:langgraph4j-core" }
+langgraph4j-agent-executor      = { module = "org.bsc.langgraph4j:langgraph4j-agent-executor" }
+langgraph4j-langchain4j         = { module = "org.bsc.langgraph4j:langgraph4j-langchain4j" }
 
 [plugins]
 spring-boot                  = { id = "org.springframework.boot",          version.ref = "springBoot" }

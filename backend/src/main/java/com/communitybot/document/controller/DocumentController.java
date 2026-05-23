@@ -37,7 +37,7 @@ public class DocumentController {
             @CurrentUser UUID userId
     ) {
         FaqDocumentResponse response = ingestionService.ingest(
-                req.attachmentId(), wsId, userId, embeddingService::embed);
+                req.attachmentId(), wsId, userId, (text) -> embeddingService.embed(text, userId));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 

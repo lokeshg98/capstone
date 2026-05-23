@@ -68,6 +68,47 @@ public class OrganizationService {
                 .toList();
     }
 
+    /**
+     * Self-service join for local/dev testing: any authenticated user may join an org by slug.
+     */
+    @Transactional
+    public OrgResponse joinBySlug(String slug, UUID userId) {
+        Organization org = orgRepository.findBySlug(slug.trim().toLowerCase())
+                .orElseThrow(() -> new AppException(ErrorCode.ORG_NOT_FOUND));
+
+        if (memberRepository.existsByOrganizationIdAndUserId(org.getId(), userId)) {
+            throw new AppException(ErrorCode.ORG_ALREADY_MEMBER);
+        }
+
+        User user = userService.getOrThrow(userId);
+        memberRepository.save(
+                OrgMember.builder()
+                        .organization(org)
+                        .user(user)
+                        .role(OrgRole.MEMBER)
+                        .build()
+        );
+
+        return OrgResponse.from(org, OrgRole.MEMBER);
+    }
+
+    /**
+     * Permanently deletes an organisation and all nested data (workspaces, channels, messages, etc.)
+     * via database cascades. Only the original creator ({@code owner_id}) may delete.
+     */
+    @Transactional
+    public void delete(UUID orgId, UUID userId, String confirmSlug) {
+        Organization org = getOrThrow(orgId);
+        if (!org.getOwner().getId().equals(userId)) {
+            throw new AppException(ErrorCode.ORG_DELETE_FORBIDDEN);
+        }
+        String typed = confirmSlug == null ? "" : confirmSlug.trim();
+        if (!org.getSlug().equalsIgnoreCase(typed)) {
+            throw new AppException(ErrorCode.ORG_DELETE_CONFIRMATION_MISMATCH);
+        }
+        orgRepository.delete(org);
+    }
+
     @Transactional(readOnly = true)
     public OrgResponse getById(UUID orgId, UUID requesterId) {
         Organization org = getOrThrow(orgId);

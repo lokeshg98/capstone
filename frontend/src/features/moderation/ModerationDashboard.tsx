@@ -141,6 +141,8 @@ function FlagCard({
     SPAM:        'bg-yellow-100 text-yellow-700',
     THREAT:      'bg-red-100 text-red-700',
   };
+  const badgeClass = reasonColor[flag.llmReason]
+    ?? (flag.llmReason.startsWith('OPENAI_') ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600');
 
   return (
     <div className="rounded-xl border border-gray-200 p-4 space-y-3">
@@ -161,7 +163,7 @@ function FlagCard({
         </div>
         <span className={cn(
           'shrink-0 text-xs px-2 py-0.5 rounded-full font-medium',
-          reasonColor[flag.llmReason] ?? 'bg-gray-100 text-gray-600',
+          badgeClass,
         )}>
           {flag.llmReason} {confidencePct}%
         </span>

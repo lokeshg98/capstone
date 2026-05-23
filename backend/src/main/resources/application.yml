@@ -79,9 +79,54 @@ app:
     max-tokens:      512
     temperature:     0.7
     daily-rag-limit: 100       # max RAG calls per workspace per calendar day
+    model-rates:
+      fallback:
+        input-per-million: 0.15
+        output-per-million: 0.60
+      gpt-4o-mini:
+        input-per-million: 0.15
+        output-per-million: 0.60
+      text-embedding-3-small:
+        input-per-million: 0.02
+        output-per-million: 0
+  agent:
+    max-sequential-tools: 8
+    max-sequential-tools-constrained: 4
+    short-term-memory-max-messages: 24
+    redis-memory-ttl-hours: 168
+    long-term-memory-top-k: 3
+    daily-workspace-limit: 500
+    tavily-api-key: ${TAVILY_API_KEY:}
+    web-search-admin-only: true
   moderation:
     classification-enabled: ${MODERATION_ENABLED:true}
-    confidence-threshold:   0.7   # only create a flag when LLM confidence >= this value
+    confidence-threshold:   0.7
+    openai-moderation-enabled: true
+    guidelines-check-enabled:  true
+    hide-on-flag:              true
+    openai-moderation-model:   omni-moderation-latest
+  thread-summary:
+    enabled:       true
+    min-messages:  10   # Otter-style digest when root + replies reach this count
+  n8n:
+    enabled:         true
+    api-key:         ${N8N_API_KEY:change-me-in-production}
+    default-period-days: 7
+    max-messages-per-channel: 40
+  scheduling:
+    poll-interval-ms: 60000
+  welcome:
+    enabled: true
+    personalization-enabled: true
+    default-template: "👋 Welcome to the community, {name}! We're glad you're here. Introduce yourself in #general and explore the channels."
+  joypixels:
+    enabled: true
+    emoji-json-url: https://cdn.jsdelivr.net/npm/emoji-toolkit@9.0.0/emoji.json
+    cdn-base: https://cdn.jsdelivr.net/npm/emoji-toolkit@9.0.0
+    png-size: 64
+    ai-search-enabled: true
+    default-limit: 24
+    api-key: ${JOYPIXELS_API_KEY:}
 
 # ─── Server ───────────────────────────────────────────────────────────────────
 server:
@@ -94,7 +139,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, agents
   endpoint:
     health:
       show-details: when-authorized

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, MessageSquarePlus, Trash2, Clock, RefreshCw, Shield, Plus, X } from 'lucide-react';
+import { Calendar, MessageSquarePlus, Trash2, Clock, RefreshCw, Shield, Plus, X, Sparkles } from 'lucide-react';
 import { fetchChannels } from '@/features/channels/channelApi';
 import {
   fetchScheduledPosts,
@@ -9,7 +9,12 @@ import {
   type ScheduledPostResponse,
   type ScheduleType,
 } from '@/features/scheduling/schedulingApi';
-import { fetchWelcomeTemplate, updateWelcomeTemplate } from './workspaceApi';
+import {
+  fetchDigestPreferences,
+  updateDigestPreferences,
+  fetchN8nIntegrationInfo,
+} from '@/features/scheduling/digestApi';
+import { fetchWelcomeTemplate, updateWelcomeTemplate, fetchCommunityGuidelines, updateCommunityGuidelines } from './workspaceApi';
 import {
   fetchRoles,
   createRole,
@@ -21,7 +26,7 @@ import {
   type MemberRolesResponse,
 } from './roleApi';
 
-type Tab = 'scheduled' | 'welcome' | 'roles';
+type Tab = 'scheduled' | 'digest' | 'guidelines' | 'welcome' | 'roles';
 
 const STATUS_BADGE: Record<string, string> = {
   PENDING:   'bg-yellow-100 text-yellow-700',
@@ -39,7 +44,7 @@ export default function WorkspaceSettings({ workspaceId }: { workspaceId: string
       <div className="h-14 border-b border-gray-200 px-6 flex items-center gap-4">
         <span className="font-semibold text-gray-800">Workspace Settings</span>
         <div className="flex gap-1 ml-auto">
-          {(['scheduled', 'welcome', 'roles'] as Tab[]).map((t) => (
+          {(['scheduled', 'digest', 'guidelines', 'welcome', 'roles'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -49,7 +54,11 @@ export default function WorkspaceSettings({ workspaceId }: { workspaceId: string
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              {t === 'scheduled' ? 'Scheduled' : t === 'welcome' ? 'Welcome' : 'Roles'}
+              {t === 'scheduled' ? 'Scheduled Posts'
+                : t === 'digest' ? 'Weekly Digest (n8n)'
+                : t === 'guidelines' ? 'Moderation Guidelines'
+                : t === 'welcome' ? 'Welcome Message'
+                : 'Roles'}
             </button>
           ))}
         </div>
@@ -58,6 +67,10 @@ export default function WorkspaceSettings({ workspaceId }: { workspaceId: string
       <div className="flex-1 overflow-y-auto p-6">
         {tab === 'scheduled' ? (
           <ScheduledPostsTab workspaceId={workspaceId} />
+        ) : tab === 'digest' ? (
+          <WeeklyDigestTab workspaceId={workspaceId} />
+        ) : tab === 'guidelines' ? (
+          <GuidelinesTab workspaceId={workspaceId} />
         ) : tab === 'welcome' ? (
           <WelcomeMessageTab workspaceId={workspaceId} />
         ) : (
@@ -301,6 +314,158 @@ function ScheduledPostRow({
   );
 }
 
+// ─── Weekly Digest (n8n) ─────────────────────────────────────────────────────
+
+function WeeklyDigestTab({ workspaceId }: { workspaceId: string }) {
+  const qc = useQueryClient();
+
+  const { data: prefs, isLoading: prefsLoading } = useQuery({
+    queryKey: ['digest-preferences'],
+    queryFn:  fetchDigestPreferences,
+  });
+
+  const { data: n8nInfo, isLoading: n8nLoading } = useQuery({
+    queryKey: ['n8n-integration'],
+    queryFn:  fetchN8nIntegrationInfo,
+  });
+
+  const updateMut = useMutation({
+    mutationFn: (enabled: boolean) => updateDigestPreferences(enabled),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['digest-preferences'] }),
+  });
+
+  if (prefsLoading || n8nLoading) {
+    return <p className="text-sm text-gray-500">Loading…</p>;
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
+        <div className="flex items-center gap-2 text-violet-900 font-semibold text-sm mb-2">
+          <Sparkles className="h-4 w-4" />
+          Weekly Digest every Friday 5pm
+        </div>
+        <p className="text-sm text-violet-800 leading-relaxed">
+          n8n triggers a webhook that builds a personalized digest from activity in{' '}
+          <strong>all channels you are subscribed to</strong> (via channel membership).
+          Digests are posted to <code className="bg-white/70 px-1 rounded">#weekly-digest</code>.
+        </p>
+      </div>
+
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={prefs?.weeklyDigestEnabled ?? true}
+          onChange={(e) => updateMut.mutate(e.target.checked)}
+          disabled={updateMut.isPending}
+          className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600"
+        />
+        <span>
+          <span className="text-sm font-medium text-gray-800 block">Receive weekly digest</span>
+          <span className="text-xs text-gray-500">
+            Opt out if you do not want a Friday summary across your subscribed channels.
+          </span>
+        </span>
+      </label>
+
+      <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-800">n8n setup</h3>
+        {!n8nInfo?.configured && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            Set <code className="bg-white px-1">N8N_API_KEY</code> in the backend environment before importing the workflow.
+          </p>
+        )}
+        <dl className="text-xs space-y-2">
+          <div>
+            <dt className="font-medium text-gray-600">Webhook URL</dt>
+            <dd className="font-mono bg-gray-50 border rounded px-2 py-1 mt-0.5 break-all">
+              {n8nInfo?.webhookUrl}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-gray-600">Auth header</dt>
+            <dd className="font-mono bg-gray-50 border rounded px-2 py-1 mt-0.5">
+              {n8nInfo?.apiKeyHeader}: &lt;your N8N_API_KEY&gt;
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-gray-600">Cron (Friday 5pm)</dt>
+            <dd className="font-mono bg-gray-50 border rounded px-2 py-1 mt-0.5">
+              {n8nInfo?.cronExample}
+            </dd>
+            <dd className="text-gray-500 mt-1">{n8nInfo?.cronDescription}</dd>
+          </div>
+        </dl>
+        <p className="text-xs text-gray-500">
+          Import <code className="bg-gray-100 px-1 rounded">n8n/weekly-digest-workflow.json</code> from the repo.
+          Optional body: <code className="bg-gray-100 px-1 rounded">{`{"workspaceId":"${workspaceId}","periodDays":7}`}</code>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Moderation Guidelines ───────────────────────────────────────────────────
+
+function GuidelinesTab({ workspaceId }: { workspaceId: string }) {
+  const qc = useQueryClient();
+
+  const { data: guidelines, isLoading } = useQuery({
+    queryKey: ['community-guidelines', workspaceId],
+    queryFn:  () => fetchCommunityGuidelines(workspaceId),
+  });
+
+  const [draft, setDraft] = useState<string | null>(null);
+  const current = draft ?? guidelines ?? '';
+
+  const saveMut = useMutation({
+    mutationFn: (text: string) => updateCommunityGuidelines(workspaceId, text),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['community-guidelines', workspaceId] });
+      setDraft(null);
+    },
+  });
+
+  if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>;
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800 mb-1">Community guidelines</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          Used with the <strong>OpenAI Moderation API</strong> for context-aware checks.
+          Objectionable posts are auto-hidden and flagged. Leave blank to use the default rules shipped with the app.
+        </p>
+        <textarea
+          rows={14}
+          value={current}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Describe your community rules (respect, no spam, no harassment…)"
+          className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <p className="text-xs text-gray-400 mt-1">{current.length} / 10000</p>
+      </div>
+      <div className="flex gap-2">
+        <button
+          disabled={saveMut.isPending || draft === null}
+          onClick={() => saveMut.mutate(current)}
+          className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded hover:bg-brand-700 disabled:opacity-50"
+        >
+          {saveMut.isPending ? 'Saving…' : 'Save guidelines'}
+        </button>
+        {draft !== null && (
+          <button
+            onClick={() => setDraft(null)}
+            className="px-4 py-2 text-gray-600 text-sm font-medium rounded hover:bg-gray-100"
+          >
+            Discard
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Welcome Message ──────────────────────────────────────────────────────────
 
 function WelcomeMessageTab({ workspaceId }: { workspaceId: string }) {
@@ -329,8 +494,12 @@ function WelcomeMessageTab({ workspaceId }: { workspaceId: string }) {
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-1">Welcome message</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Sent by the bot to <strong>#general</strong> whenever a new member joins the workspace.
-          Use <code className="bg-gray-100 px-1 rounded">{'{name}'}</code> to insert the member's display name.
+          Sent by the bot to <strong>#general</strong> when someone joins the workspace.
+          Placeholders: <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>,{' '}
+          <code className="bg-gray-100 px-1 rounded">{'{interests}'}</code>,{' '}
+          <code className="bg-gray-100 px-1 rounded">{'{about}'}</code>.
+          If the member filled in their profile, the bot generates a <strong>personalized</strong> LLM welcome
+          using their about me and interests.
         </p>
         <textarea
           rows={5}

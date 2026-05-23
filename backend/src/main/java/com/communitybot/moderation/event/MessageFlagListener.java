@@ -18,9 +18,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.util.UUID;
 
 /**
- * Asynchronous listener that runs a content classification on every new message
- * after the transaction commits. Creates a {@link com.communitybot.moderation.domain.ModerationFlag}
- * when the classifier scores the message above the configured confidence threshold.
+ * Runs the two-layer moderation pipeline after each message is committed:
+ * OpenAI Moderation API + custom community guidelines. Flagged messages are
+ * hidden from all users and queued for moderator review.
  */
 @Component
 @Slf4j
@@ -44,16 +44,21 @@ public class MessageFlagListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageSent(MessageSentEvent event) {
         if (!classificationEnabled) return;
-        if (isBotUser(event.authorId()))   return;
-        if (event.body().length() < 10)    return;   // too short to classify meaningfully
+        if (isBotUser(event.authorId())) return;
 
         try {
-            ClassificationResult result = classifier.classify(event.body());
-            log.debug("Classification: msgId={} safe={} reason={} confidence={:.2f}",
-                    event.messageId(), result.safe(), result.flagReason(), result.confidence());
+            ClassificationResult result = classifier.classify(
+                    event.body(), event.workspaceId(), event.authorId());
 
-            if (!result.safe() && result.confidence() >= confidenceThreshold) {
-                moderationService.flagMessage(event.messageId(), event.workspaceId(), result);
+            log.debug("Classification: msgId={} safe={} reason={} confidence={} source={}",
+                    event.messageId(), result.safe(), result.flagReason(),
+                    result.confidence(), result.source());
+
+            if (!result.safe()) {
+                boolean openAiHit = result.source() == ContentClassifierService.ModerationSource.OPENAI;
+                if (openAiHit || result.confidence() >= confidenceThreshold) {
+                    moderationService.flagMessage(event.messageId(), event.workspaceId(), result);
+                }
             }
         } catch (Exception e) {
             log.error("Content classification failed for message {}: {}", event.messageId(), e.getMessage());

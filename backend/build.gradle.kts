@@ -23,6 +23,15 @@ configurations {
 }
 
 dependencies {
+    implementation(platform(libs.langchain4j.bom))
+    implementation(platform(libs.langgraph4j.bom))
+    implementation(libs.langgraph4j.core)
+    implementation(libs.langgraph4j.agent.executor)
+    implementation(libs.langgraph4j.langchain4j)
+    implementation(libs.langchain4j)
+    implementation(libs.langchain4j.open.ai)
+    implementation(libs.langchain4j.web.search.tavily)
+
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.security)

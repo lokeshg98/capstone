@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -49,8 +50,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         String authHeader = accessor.getFirstNativeHeader("Authorization");
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
-            log.debug("WS CONNECT without auth header — anonymous session");
-            return message;
+            log.debug("WS CONNECT without auth header — rejecting");
+            throw new MessagingException("WebSocket CONNECT requires Authorization: Bearer <token>");
         }
 
         String token = authHeader.substring(7);
@@ -63,6 +64,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             log.debug("WS authenticated: userId={}", userId);
         } else {
             log.debug("WS CONNECT with invalid token — rejecting");
+            throw new MessagingException("Invalid or expired access token");
         }
 
         return message;

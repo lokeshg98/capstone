@@ -2,6 +2,7 @@ package com.communitybot.workspace.repository;
 
 import com.communitybot.workspace.domain.WorkspaceMember;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,4 +15,11 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     boolean existsByWorkspaceIdAndUserId(UUID workspaceId, UUID userId);
 
     List<WorkspaceMember> findByUserId(UUID userId);
+
+    @Query("""
+            SELECT wm FROM WorkspaceMember wm
+            JOIN FETCH wm.user
+            WHERE wm.workspace.id = :workspaceId
+            """)
+    List<WorkspaceMember> findAllByWorkspaceId(UUID workspaceId);
 }

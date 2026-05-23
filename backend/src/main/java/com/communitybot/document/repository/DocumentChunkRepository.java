@@ -26,4 +26,17 @@ public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, UU
             @Param("wsId") UUID wsId,
             @Param("queryVector") String queryVector
     );
+
+    @Query(value = """
+            SELECT dc.id, dc.chunk_text, dc.chunk_index, fd.title AS document_title
+            FROM document_chunks dc
+            JOIN faq_documents fd ON fd.id = dc.faq_document_id
+            WHERE dc.workspace_id = :wsId
+            ORDER BY dc.embedding <=> CAST(:queryVector AS vector)
+            LIMIT 5
+            """, nativeQuery = true)
+    List<FaqSearchChunkRow> findTopFaqChunksWithTitles(
+            @Param("wsId") UUID wsId,
+            @Param("queryVector") String queryVector
+    );
 }

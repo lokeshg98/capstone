@@ -48,16 +48,19 @@ The message was removed by a moderator or admin due to a content policy violatio
 ## Community Bot (AI Assistant)
 
 **Q: What can the bot do?**
-The bot has two main capabilities:
-
-1. **Q&A over FAQ documents** — upload PDF or DOCX files and the bot answers questions based solely on their content (Retrieval-Augmented Generation / RAG).
-2. **In-channel replies** — mention `@bot` anywhere in a channel message and the bot replies in the same channel, drawing on the same FAQ knowledge base.
+The bot supports a **multi-agent** assistant in **Ask Bot** (sidebar): it can search **FAQ documents**, recall **long-term memories** from your past Ask Bot Q&A in this workspace, search **channel messages** (keyword and semantic), **summarize threads**, run **web search** when enabled (Tavily; typically **admins only**), inspect **moderation** stats and queues (moderators), and **propose scheduled posts** that only apply after you **confirm** them in the UI. **In-channel** replies via `@bot` are intentionally shorter and only use FAQ-style tools.
 
 **Q: How do I ask the bot a question?**
-Click **Ask Bot** at the bottom of the left sidebar. A full-page chat interface opens. Type your question and press `Enter` (or click the send button). The bot will reply and cite how many document excerpts it used.
+Click **Ask Bot** at the bottom of the left sidebar. A full-page chat opens. Type your question and press `Enter` (or click send). Replies **stream** in real time; you will see **tool steps** (collapsed by default), **source excerpts** from documents when RAG is used, and a **confirmation card** if the bot proposes scheduling a post.
 
 **Q: How do I teach the bot new information?**
 In the **Ask Bot** panel, scroll to the **FAQ Documents** section at the bottom (click to expand). Click **Upload FAQ document** and select a PDF or DOCX file. The platform uploads the file, chunks it, and embeds it automatically. Once ingested, the bot can answer questions from it immediately.
+
+**Q: The bot offered to schedule a post. What should I do?**
+If the assistant proposes a **scheduled post**, a yellow **Confirm / Decline** card appears under the reply. Nothing is written to the schedule until you click **Confirm**. **Decline** discards the proposal.
+
+**Q: How do I enable web search in Ask Bot?**
+Set `TAVILY_API_KEY` in `infra/.env` (see [RUNBOOK.md](./RUNBOOK.md)). By default, only **workspace admins** can use web search tools. Without the key, web search is disabled and the bot explains that when relevant.
 
 **Q: What file types does the bot accept for its knowledge base?**
 PDF (`.pdf`) and Word documents (`.docx`) only.
@@ -69,10 +72,10 @@ Type `@bot` anywhere in your message, e.g.:
 @bot what is our refund policy?
 ```
 
-The bot reads the question, searches the FAQ knowledge base, and posts its answer directly in the channel.
+The bot reads the question, searches the FAQ knowledge base (and limited tools in quick-reply mode), and posts its answer directly in the channel.
 
 **Q: The bot answered "I don't know" or gave a vague response. Why?**
-The bot only answers from documents that have been uploaded and ingested. If the relevant information is not in any uploaded document, the bot cannot fabricate an answer. Upload the relevant PDF or DOCX to improve coverage.
+FAQ answers depend on **uploaded documents**. In the full **Ask Bot** panel the assistant can also search **channels** and other sources when it chooses the right tools; if nothing matches, it may still say it does not know. Upload the relevant PDF or DOCX to improve document coverage.
 
 **Q: The bot returned an error. What should I do?**
 Ensure the backend is running and that `OPENAI_API_KEY` is set in `infra/.env` and exported before starting the backend. Without a valid OpenAI key, RAG queries will fail with a 500 error.

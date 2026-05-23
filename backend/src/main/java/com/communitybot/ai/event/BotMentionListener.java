@@ -1,7 +1,7 @@
 package com.communitybot.ai.event;
 
+import com.communitybot.ai.agent.MultiAgentService;
 import com.communitybot.ai.service.BotUserInitializer;
-import com.communitybot.ai.service.RagService;
 import com.communitybot.auth.domain.User;
 import com.communitybot.auth.repository.UserRepository;
 import com.communitybot.message.dto.MessageResponse;
@@ -17,20 +17,12 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.UUID;
 
-/**
- * Listens for {@link MessageSentEvent} after a transaction commits and,
- * when the message body contains {@code @bot}, triggers the RAG pipeline
- * and posts the answer as a thread reply authored by the Bot user.
- *
- * <p>{@code @Async} ensures the bot's call to OpenAI does not block
- * the user's original HTTP/WS response.</p>
- */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class BotMentionListener {
 
-    private final RagService         ragService;
+    private final MultiAgentService   multiAgentService;
     private final MessageService     messageService;
     private final UserRepository     userRepository;
     private final RealtimePublisher  realtimePublisher;
@@ -40,7 +32,6 @@ public class BotMentionListener {
     public void onMessageSent(MessageSentEvent event) {
         if (!event.body().toLowerCase().contains("@bot")) return;
 
-        // Prevent the bot from triggering itself in an infinite loop
         UUID botId = userRepository.findByEmail(BotUserInitializer.BOT_EMAIL)
                 .map(User::getId).orElse(null);
         if (botId != null && botId.equals(event.authorId())) return;
@@ -50,7 +41,9 @@ public class BotMentionListener {
             String question = event.body().replaceAll("(?i)@bot", "").strip();
             if (question.isBlank()) question = "What can you help me with?";
 
-            String answer = ragService.ask(event.workspaceId(), question).answer();
+            String answer = multiAgentService
+                    .answerSync(event.workspaceId(), event.authorId(), null, question, true)
+                    .answer();
 
             if (botId == null) {
                 botId = userRepository.findByEmail(BotUserInitializer.BOT_EMAIL)
@@ -62,8 +55,8 @@ public class BotMentionListener {
                     event.channelId(),
                     botId,
                     answer,
-                    event.messageId(),   // reply in-thread
-                    null                 // no attachment
+                    event.messageId(),
+                    null
             );
 
             realtimePublisher.publishToChannel(event.channelId(), WsOutboundEvent.messageCreated(botReply));

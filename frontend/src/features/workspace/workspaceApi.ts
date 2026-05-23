@@ -43,3 +43,14 @@ export async function fetchWelcomeTemplate(wsId: string): Promise<string | null>
 export async function updateWelcomeTemplate(wsId: string, template: string): Promise<void> {
   await api.put(`/workspaces/${wsId}/welcome-message`, { template });
 }
+
+export async function fetchCommunityGuidelines(wsId: string): Promise<string | null> {
+  const res = await api.get<{ ok: boolean; data: string | null }>(
+    `/workspaces/${wsId}/community-guidelines`,
+  );
+  return res.data.data;
+}
+
+export async function updateCommunityGuidelines(wsId: string, guidelines: string): Promise<void> {
+  await api.put(`/workspaces/${wsId}/community-guidelines`, { guidelines });
+}

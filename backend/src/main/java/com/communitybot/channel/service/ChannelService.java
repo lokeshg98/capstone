@@ -103,8 +103,11 @@ public class ChannelService {
     @Transactional(readOnly = true)
     public List<ChannelResponse> listForUser(UUID workspaceId, UUID userId) {
         requireWorkspaceMember(workspaceId, userId);
-        return channelRepository.findJoinedByUserIdAndWorkspaceId(userId, workspaceId).stream()
-                .map(c -> ChannelResponse.from(c, true))
+        return channelRepository.findAllByWorkspaceIdAndTypeOrderByNameAsc(workspaceId, ChannelType.PUBLIC)
+                .stream()
+                .map(c -> ChannelResponse.from(
+                        c,
+                        channelMemberRepository.existsByChannelIdAndUserId(c.getId(), userId)))
                 .toList();
     }
 
@@ -128,8 +131,13 @@ public class ChannelService {
 
     @Transactional(readOnly = true)
     public List<ChannelMemberResponse> listMembers(UUID workspaceId, UUID channelId, UUID userId) {
+        requireWorkspaceMember(workspaceId, userId);
+        Channel channel = getOrThrow(channelId);
+        if (!channel.getWorkspace().getId().equals(workspaceId)) {
+            throw new AppException(ErrorCode.CHANNEL_NOT_FOUND);
+        }
         requireChannelMember(channelId, userId);
-        return channelMemberRepository.findAllByChannelId(channelId).stream()
+        return channelMemberRepository.findAllByChannelIdWithUser(channelId).stream()
                 .map(cm -> {
                     var member = wsMemberRepository.findByWorkspaceIdAndUserId(workspaceId, cm.getUser().getId());
                     List<String> roles = member.map(m -> m.getRoles().stream()
@@ -140,7 +148,6 @@ public class ChannelService {
     }
 
     // -------------------------------------------------------------------------
-    // Package-private helpers used by the message service and realtime module
 
     public Channel getOrThrow(UUID channelId) {
         return channelRepository.findById(channelId)

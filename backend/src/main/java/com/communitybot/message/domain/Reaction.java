@@ -36,7 +36,7 @@ public class Reaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 32)
     private String emoji;
 
     @CreatedDate
