@@ -79,8 +79,8 @@ function OrgList({ orgs }: { orgs: OrgResponse[] }) {
         workspaces = [ws];
       }
       navigate(`/workspaces/${workspaces[0].id}`);
-    } catch {
-      // silently ignore — backend may be down
+    } catch (err) {
+      console.error('Failed to open organisation:', err);
     }
   };
 

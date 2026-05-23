@@ -6,6 +6,7 @@ import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.service.MessageService;
 import com.communitybot.realtime.dto.WsOutboundEvent;
 import com.communitybot.realtime.dto.WsSendMessagePayload;
+import com.communitybot.realtime.service.PresenceService;
 import com.communitybot.realtime.service.RealtimePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ public class ChatWebSocketController {
     private final MessageService    messageService;
     private final UserService       userService;
     private final RealtimePublisher publisher;
+    private final PresenceService   presenceService;
 
     @MessageMapping("/channels/{channelId}/send")
     public void send(
@@ -60,6 +62,26 @@ public class ChatWebSocketController {
         UUID userId = resolveUserId(headerAccessor);
         User user   = userService.getOrThrow(userId);
         publisher.publishToChannel(channelId, WsOutboundEvent.typing(userId, user.getDisplayName()));
+    }
+
+    @MessageMapping("/presence/{wsId}/join")
+    public void presenceJoin(
+            @DestinationVariable UUID wsId,
+            SimpMessageHeaderAccessor headerAccessor
+    ) {
+        UUID userId = resolveUserId(headerAccessor);
+        presenceService.userJoinedWorkspace(wsId, userId);
+        log.debug("Presence join: userId={} wsId={}", userId, wsId);
+    }
+
+    @MessageMapping("/presence/{wsId}/leave")
+    public void presenceLeave(
+            @DestinationVariable UUID wsId,
+            SimpMessageHeaderAccessor headerAccessor
+    ) {
+        UUID userId = resolveUserId(headerAccessor);
+        presenceService.userLeftWorkspace(wsId, userId);
+        log.debug("Presence leave: userId={} wsId={}", userId, wsId);
     }
 
     // -------------------------------------------------------------------------

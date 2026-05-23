@@ -8,11 +8,8 @@ import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
 /**
- * Wires the Redis message-listener container that subscribes to {@code channel:*}
- * and forwards events to STOMP via {@link RedisChannelSubscriber}.
- *
- * {@link org.springframework.data.redis.core.StringRedisTemplate} is auto-configured
- * by Spring Boot — no need to define it here.
+ * Wires the Redis message-listener container that subscribes to
+ * {@code channel:*} and {@code workspace:*} and forwards events to STOMP.
  */
 @Configuration
 public class RedisConfig {
@@ -24,8 +21,8 @@ public class RedisConfig {
     ) {
         var container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        // Pattern subscription — picks up all channel:* keys without listing individual channels
         container.addMessageListener(subscriber, new PatternTopic("channel:*"));
+        container.addMessageListener(subscriber, new PatternTopic("workspace:*"));
         return container;
     }
 }

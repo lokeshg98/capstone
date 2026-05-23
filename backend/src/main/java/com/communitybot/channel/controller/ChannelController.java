@@ -1,8 +1,10 @@
 package com.communitybot.channel.controller;
 
+import com.communitybot.channel.dto.ChannelMemberResponse;
 import com.communitybot.channel.dto.ChannelResponse;
 import com.communitybot.channel.dto.CreateChannelRequest;
 import com.communitybot.channel.service.ChannelService;
+import com.communitybot.realtime.service.PresenceService;
 import com.communitybot.shared.dto.ApiResponse;
 import com.communitybot.shared.security.CurrentUser;
 import com.communitybot.workspace.domain.Workspace;
@@ -26,6 +28,7 @@ public class ChannelController {
 
     private final ChannelService   channelService;
     private final WorkspaceService workspaceService;
+    private final PresenceService  presenceService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<ChannelResponse>> create(
@@ -54,5 +57,20 @@ public class ChannelController {
             @CurrentUser UUID userId
     ) {
         return ResponseEntity.ok(ApiResponse.ok(channelService.join(wsId, channelId, userId)));
+    }
+
+    @GetMapping("/{channelId}/members")
+    public ResponseEntity<ApiResponse<List<ChannelMemberResponse>>> listMembers(
+            @PathVariable UUID wsId,
+            @PathVariable UUID channelId,
+            @CurrentUser UUID userId
+    ) {
+        List<ChannelMemberResponse> members = channelService.listMembers(wsId, channelId, userId);
+        List<ChannelMemberResponse> enriched = members.stream()
+                .map(m -> new ChannelMemberResponse(
+                        m.userId(), m.memberId(), m.displayName(), m.avatarUrl(),
+                        presenceService.isOnline(m.userId()), m.roles()))
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(enriched));
     }
 }

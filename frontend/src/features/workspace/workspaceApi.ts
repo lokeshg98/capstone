@@ -6,7 +6,7 @@ export interface WorkspaceResponse {
   name:        string;
   slug:        string;
   description: string | null;
-  myRole:      'ADMIN' | 'MODERATOR' | 'MEMBER';
+  myRoles:     string[];
   createdAt:   string;
 }
 

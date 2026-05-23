@@ -5,6 +5,8 @@ import com.communitybot.shared.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -46,6 +48,10 @@ public class Workspace extends BaseEntity {
         this.slug        = slug;
         this.description = description;
     }
+
+    @OneToMany(mappedBy = "workspace", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<WorkspaceMember> members = new ArrayList<>();
 
     public void setWelcomeMessageTemplate(String template) {
         this.welcomeMessageTemplate = template;
