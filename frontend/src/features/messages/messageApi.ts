@@ -33,6 +33,7 @@ export interface MessageResponse {
   createdAt:    string;
   reactions:    ReactionSummary[];
   attachment:   AttachmentInfo | null;
+  pending?:     boolean;
 }
 
 export interface WsOutboundEvent {

@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchMessages,
+  type PageResponse,
   type MessageResponse,
   type WsOutboundEvent,
 } from '@/features/messages/messageApi';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { useAuthStore } from '@/features/auth/useAuthStore';
 
 /**
  * Combines HTTP-loaded message history with real-time WebSocket updates.
@@ -20,6 +22,7 @@ import { useWebSocket } from '@/context/WebSocketContext';
 export function useChannelMessages(channelId: string | null) {
   const qc               = useQueryClient();
   const { connected, subscribe } = useWebSocket();
+  const currentUser = useAuthStore((s) => s.user);
 
   const queryKey = ['messages', channelId];
 
@@ -39,18 +42,29 @@ export function useChannelMessages(channelId: string | null) {
       switch (event.eventType) {
         case 'MESSAGE_CREATED': {
           const newMsg = event.data as MessageResponse;
-          qc.setQueryData<MessageResponse[]>(queryKey, (prev = []) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;  // deduplicate
-            return [...prev, newMsg];
+          qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
+            if (!prev) return prev;
+            const withoutPending = prev.content.filter((m) => {
+              if (!m.pending) return true;
+              return !matchesPendingMessage(m, newMsg);
+            });
+            if (withoutPending.some((m) => m.id === newMsg.id)) {
+              return { ...prev, content: withoutPending };
+            }
+            return { ...prev, content: [...withoutPending, newMsg] };
           });
           break;
         }
         case 'MESSAGE_UPDATED':
         case 'REACTION_UPDATED': {
           const updated = event.data as MessageResponse;
-          qc.setQueryData<MessageResponse[]>(queryKey, (prev = []) =>
-            prev.map((m) => (m.id === updated.id ? updated : m)),
-          );
+          qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              content: prev.content.map((m) => (m.id === updated.id ? updated : m)),
+            };
+          });
           break;
         }
         // TYPING events are handled separately by the TypingIndicator component
@@ -60,5 +74,54 @@ export function useChannelMessages(channelId: string | null) {
     return unsub;
   }, [channelId, connected]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return query;
+  return {
+    ...query,
+    addOptimisticMessage: (msg: MessageResponse) => {
+      qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
+        if (!prev) {
+          return {
+            content: [msg],
+            page: 0,
+            size: 50,
+            totalElements: 1,
+            totalPages: 1,
+            last: true,
+          };
+        }
+        if (prev.content.some((m) => m.id === msg.id)) return prev;
+        return { ...prev, content: [...prev.content, msg] };
+      });
+    },
+    commitMessage: (tempId: string, msg: MessageResponse) => {
+      qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
+        if (!prev) {
+          return {
+            content: [msg],
+            page: 0,
+            size: 50,
+            totalElements: 1,
+            totalPages: 1,
+            last: true,
+          };
+        }
+        const content = prev.content.filter((m) => m.id !== tempId);
+        if (content.some((m) => m.id === msg.id)) return { ...prev, content };
+        return { ...prev, content: [...content, msg] };
+      });
+    },
+    removeOptimisticMessage: (id: string) => {
+      qc.setQueryData<PageResponse<MessageResponse>>(queryKey, (prev) => {
+        if (!prev) return prev;
+        return { ...prev, content: prev.content.filter((m) => m.id !== id) };
+      });
+    },
+    currentUser,
+  };
+}
+
+function matchesPendingMessage(pending: MessageResponse, real: MessageResponse) {
+  return pending.author.id === real.author.id
+    && pending.body === real.body
+    && pending.threadRootId === real.threadRootId
+    && (pending.attachment?.id ?? null) === (real.attachment?.id ?? null);
 }
