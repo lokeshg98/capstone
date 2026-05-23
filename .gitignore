@@ -8,6 +8,10 @@ build/
 *.iml
 out/
 
+# Eclipse / Buildship
+backend/.project
+backend/.settings/
+
 # VS Code
 .vscode/
 
@@ -30,6 +34,3 @@ Thumbs.db
 
 # dev.sh log output
 .dev-logs/
-
-# Generated Gradle wrapper binary (auto-created by dev.sh on first run)
-gradle/wrapper/gradle-wrapper.jar

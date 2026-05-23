@@ -4,12 +4,17 @@ import com.communitybot.auth.domain.User;
 import com.communitybot.auth.dto.AuthTokenResponse;
 import com.communitybot.auth.dto.UserProfileResponse;
 import com.communitybot.auth.service.JwtService;
+import com.communitybot.auth.service.AuthSessionService;
+import com.communitybot.auth.service.LocalAuthService;
 import com.communitybot.auth.service.UserService;
 import com.communitybot.shared.dto.ApiResponse;
 import com.communitybot.shared.security.CurrentUser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +27,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final JwtService  jwtService;
-    private final UserService userService;
+    private final JwtService         jwtService;
+    private final AuthSessionService  sessionService;
+    private final LocalAuthService    localAuthService;
+    private final UserService         userService;
 
     /** Returns the profile of the currently authenticated user. */
     @GetMapping("/me")
@@ -52,15 +59,32 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(new AuthTokenResponse(token)));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> localLogin(
+            @Valid @RequestBody LocalLoginRequest req,
+            HttpServletResponse response
+    ) {
+        User user = localAuthService.login(req.email(), req.password());
+        AuthSessionService.AuthTokens tokens = sessionService.issue(user);
+        sessionService.addRefreshCookie(response, tokens.refreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(new AuthTokenResponse(tokens.accessToken())));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> register(
+            @Valid @RequestBody LocalRegisterRequest req,
+            HttpServletResponse response
+    ) {
+        User user = localAuthService.register(req.email(), req.password(), req.displayName());
+        AuthSessionService.AuthTokens tokens = sessionService.issue(user);
+        sessionService.addRefreshCookie(response, tokens.refreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(new AuthTokenResponse(tokens.accessToken())));
+    }
+
     /** Clears the refresh-token cookie (browser-side logout). */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
-        Cookie clear = new Cookie("refresh_token", "");
-        clear.setHttpOnly(true);
-        clear.setSecure(true);
-        clear.setPath("/api/auth/refresh");
-        clear.setMaxAge(0);
-        response.addCookie(clear);
+        sessionService.clearRefreshCookie(response);
         return ResponseEntity.noContent().build();
     }
 
@@ -72,4 +96,15 @@ public class AuthController {
                 .findFirst()
                 .orElse(null);
     }
+
+    public record LocalLoginRequest(
+            @Email @NotBlank String email,
+            @NotBlank String password
+    ) {}
+
+    public record LocalRegisterRequest(
+            @Email @NotBlank String email,
+            @NotBlank String password,
+            String displayName
+    ) {}
 }

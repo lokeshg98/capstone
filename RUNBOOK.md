@@ -4,6 +4,8 @@
 
 Install these tools once before your first run.
 
+You do not need to install Gradle separately. The repository includes the Gradle wrapper, and all commands below use `./gradlew`.
+
 | Tool | Min version | Install (macOS) |
 |------|-------------|-----------------|
 | Java JDK | **25** | [sdkman.io](https://sdkman.io) — `sdk install java 25.0.2-ms` (recommended) or [adoptium.net](https://adoptium.net) |
@@ -233,7 +235,13 @@ The frontend is ready when you see:
 
 Go to [http://localhost:3000](http://localhost:3000).
 
-Click **Sign in with Google** or **Sign in with GitHub**. The OAuth flow redirects to the backend and back, sets an `HttpOnly` refresh-token cookie, and lands you on the dashboard.
+You can sign in with Google, GitHub, or the local demo accounts seeded in `dev`:
+
+- `admin@communitybot.local` / `Admin123!`
+- `mod@communitybot.local` / `Mod123!`
+- `user@communitybot.local` / `User123!`
+
+The OAuth flow redirects to the backend and back, sets an `HttpOnly` refresh-token cookie, and lands you on the dashboard.
 
 ---
 

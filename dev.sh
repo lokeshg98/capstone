@@ -48,7 +48,7 @@ banner() {
 # ── Prerequisites ─────────────────────────────────────────────────────────────
 check_prereqs() {
   local missing=()
-  command -v java   &>/dev/null || missing+=("java (JDK 21)")
+  command -v java   &>/dev/null || missing+=("java (JDK 25)")
   command -v docker &>/dev/null || missing+=("docker")
   command -v node   &>/dev/null || missing+=("node (v20+)")
   if [[ ${#missing[@]} -gt 0 ]]; then
@@ -59,27 +59,15 @@ check_prereqs() {
 }
 
 # ── Gradle wrapper ────────────────────────────────────────────────────────────
-# gradlew exists (committed) but gradle-wrapper.jar is a binary that must be
-# generated once. We use the system 'gradle' CLI (installed via Homebrew) to do
-# this; if it's absent we install it automatically.
-ensure_gradle_wrapper() {
+check_gradle_wrapper() {
   local jar="$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar"
-  [[ -f "$jar" ]] && return 0   # already present, nothing to do
-
-  warn "gradle-wrapper.jar not found — generating Gradle wrapper (one-time setup)..."
-
-  if ! command -v gradle &>/dev/null; then
-    log "Installing Gradle via Homebrew (requires brew)..."
-    if ! command -v brew &>/dev/null; then
-      err "Homebrew not found. Install it from https://brew.sh, then re-run ./dev.sh"
-      exit 1
-    fi
-    brew install gradle
+  if [[ -f "$jar" ]]; then
+    return 0
   fi
 
-  (cd "$SCRIPT_DIR" && gradle wrapper --gradle-version 9.1.0)
-  chmod +x "$SCRIPT_DIR/gradlew"
-  log "Gradle wrapper generated."
+  err "Missing gradle/wrapper/gradle-wrapper.jar."
+  err "Re-clone the repo or restore the wrapper binary from git, then run ./dev.sh again."
+  exit 1
 }
 
 # ── .env ─────────────────────────────────────────────────────────────────────
@@ -121,7 +109,12 @@ wait_for_port() {
   local name="$1" port="$2" max="${3:-30}"
   printf "[dev] Waiting for %s (port %s)" "$name" "$port"
   for _ in $(seq 1 "$max"); do
-    if nc -z localhost "$port" 2>/dev/null; then
+    if command -v curl &>/dev/null; then
+      if curl -fsS "http://127.0.0.1:${port}/" >/dev/null 2>&1 || curl -fsS "http://localhost:${port}/" >/dev/null 2>&1; then
+        echo -e " ${GREEN}ready${NC}"
+        return 0
+      fi
+    elif nc -z 127.0.0.1 "$port" 2>/dev/null || nc -z localhost "$port" 2>/dev/null; then
       echo -e " ${GREEN}ready${NC}"
       return 0
     fi
@@ -153,7 +146,7 @@ trap cleanup EXIT INT TERM
 
 check_prereqs
 load_env
-ensure_gradle_wrapper
+check_gradle_wrapper
 mkdir -p "$LOG_DIR"
 
 # ── 1. Infrastructure ─────────────────────────────────────────────────────────
