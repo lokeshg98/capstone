@@ -46,29 +46,9 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "status_message")
-    private String statusMessage;
-
-    @Column(name = "about_me", columnDefinition = "TEXT")
-    private String aboutMe;
-
-    @Column(columnDefinition = "TEXT")
-    private String interests;
-
-    @Column(name = "contact_info", columnDefinition = "TEXT")
-    private String contactInfo;
-
     /** Called on each OAuth login to keep display info fresh. */
     public void updateProfile(String displayName, String avatarUrl) {
         this.displayName = displayName;
         this.avatarUrl   = avatarUrl;
-    }
-
-    public void updateUserProfile(String statusMessage, String aboutMe,
-                                   String interests, String contactInfo) {
-        this.statusMessage = statusMessage;
-        this.aboutMe       = aboutMe;
-        this.interests     = interests;
-        this.contactInfo   = contactInfo;
     }
 }

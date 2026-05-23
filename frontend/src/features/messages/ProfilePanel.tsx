@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Pencil, Shield, Building2 } from 'lucide-react';
-import { fetchUserProfile, updateMyProfile } from '@/features/auth/profileApi';
+import { X, Pencil, Shield } from 'lucide-react';
+import { fetchUserProfile } from '@/features/auth/profileApi';
+import { updateMyProfile } from '@/features/profile/profileApi';
 import { assignRoleToMember, removeRoleFromMember, fetchRoles } from '@/features/workspace/roleApi';
 
 interface Role {
@@ -31,7 +32,7 @@ export default function ProfilePanel({
 }: Props) {
   const isSelf = userId === currentUserId;
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ statusMessage: '', aboutMe: '', interests: '', contactInfo: '' });
+  const [form, setForm] = useState({ statusMessage: '', aboutMe: '', interests: '' });
   const qc = useQueryClient();
 
   const { data: profile, isLoading } = useQuery({
@@ -49,14 +50,17 @@ export default function ProfilePanel({
       setForm({
         statusMessage: profile.statusMessage ?? '',
         aboutMe:       profile.aboutMe ?? '',
-        interests:     profile.interests ?? '',
-        contactInfo:   profile.contactInfo ?? '',
+        interests:     profile.interests.join(', '),
       });
     }
   }, [profile, editing]);
 
   const handleSave = async () => {
-    await updateMyProfile(form);
+    await updateMyProfile({
+      statusMessage: form.statusMessage || undefined,
+      aboutMe:       form.aboutMe || undefined,
+      interests:     form.interests.split(',').map((s) => s.trim()).filter(Boolean),
+    });
     qc.invalidateQueries({ queryKey: ['profile', userId] });
     setEditing(false);
   };
@@ -150,9 +154,9 @@ export default function ProfilePanel({
                   maxLength={500}
                   className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
-              ) : profile.interests ? (
+              ) : profile.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
-                  {profile.interests.split(',').map((i) => i.trim()).filter(Boolean).map((tag) => (
+                  {profile.interests.map((tag) => (
                     <span key={tag} className="px-2 py-0.5 bg-brand-50 text-brand-700 rounded-full text-xs">
                       {tag}
                     </span>
@@ -163,49 +167,6 @@ export default function ProfilePanel({
               ) : null}
             </Section>
 
-            {/* Contact */}
-            <Section label="Contact">
-              {editing ? (
-                <input
-                  value={form.contactInfo}
-                  onChange={(e) => setForm({ ...form, contactInfo: e.target.value })}
-                  placeholder="Discord: user#1234, Twitter: @user"
-                  maxLength={500}
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-              ) : profile.contactInfo ? (
-                <p className="text-gray-600 text-xs">{profile.contactInfo}</p>
-              ) : isSelf ? (
-                <p className="text-gray-400 text-xs italic">Add contact info.</p>
-              ) : null}
-            </Section>
-
-            {/* Organizations */}
-            {profile.organizations.length > 0 && (
-              <Section label="Organizations">
-                {profile.organizations.map((org) => {
-                  const orgWorkspaces = profile.workspaces.filter((ws) => ws.orgId === org.orgId);
-                  return (
-                    <div key={org.orgId} className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-700 py-0.5 font-medium">
-                        <Building2 className="h-3 w-3 text-gray-400" />
-                        {org.orgName}
-                        <span className="text-gray-400 font-normal">({org.role.toLowerCase()})</span>
-                      </div>
-                      {orgWorkspaces.map((ws) => (
-                        <div key={ws.workspaceId} className="flex items-center gap-1.5 text-xs text-gray-500 pl-5 py-0.5">
-                          <span className="text-gray-300">#</span>
-                          {ws.workspaceName}
-                          {ws.roles.length > 0 && (
-                            <span className="text-gray-400 ml-auto text-[10px]">{ws.roles.join(', ')}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </Section>
-            )}
           </div>
 
           {/* Role editing for admins */}

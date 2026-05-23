@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record UpdateUserProfileRequest(
+        @Size(max = 200) String statusMessage,
         @Size(max = 2000) String aboutMe,
         @Size(max = 32) String phone,
         Boolean showEmail,
