@@ -6,6 +6,8 @@ import com.communitybot.workspace.domain.Workspace;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -42,6 +44,19 @@ public class Channel extends BaseEntity {
     @Builder.Default
     private ChannelType type = ChannelType.PUBLIC;
 
+    @Column(name = "role_restricted", nullable = false)
+    @Builder.Default
+    private boolean roleRestricted = false;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "channel_accessible_roles",
+        joinColumns = @JoinColumn(name = "channel_id")
+    )
+    @Column(name = "role_name")
+    @Builder.Default
+    private Set<String> accessibleRoles = new HashSet<>();
+
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,5 +66,10 @@ public class Channel extends BaseEntity {
     public void update(String name, String description) {
         this.name        = name;
         this.description = description;
+    }
+
+    public void updateRestrictions(boolean restricted, Set<String> roles) {
+        this.roleRestricted  = restricted;
+        this.accessibleRoles = roles != null ? roles : Set.of();
     }
 }

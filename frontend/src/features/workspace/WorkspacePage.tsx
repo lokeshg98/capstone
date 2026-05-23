@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Hash, Plus, ChevronLeft, MessageSquare, Bot, ShieldAlert, Settings } from 'lucide-react';
-import { fetchChannels, createChannel, joinChannel, type ChannelResponse } from '@/features/channels/channelApi';
+import { Hash, Plus, ChevronLeft, MessageSquare, Bot, ShieldAlert, Settings, Lock } from 'lucide-react';
+import { fetchChannels, createChannel, joinChannel, updateChannelRestrictions, type ChannelResponse } from '@/features/channels/channelApi';
 import { fetchChannelMembers, type ChannelMemberResponse } from '@/features/messages/memberApi';
+import { fetchRoles } from './roleApi';
 import { useAuthStore } from '@/features/auth/useAuthStore';
 import ChatArea from '@/features/messages/ChatArea';
 import AskBotPanel from '@/features/documents/AskBotPanel';
@@ -167,7 +168,39 @@ function WorkspaceSidebar({
 }) {
   const [creating, setCreating] = useState(false);
   const [newName,  setNewName]  = useState('');
+  const [editingChannel, setEditingChannel] = useState<ChannelResponse | null>(null);
+  const [restrictRoles, setRestrictRoles] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
+  const { data: wsRoles = [] } = useQuery({
+    queryKey: ['roles', wsId],
+    queryFn:  () => fetchRoles(wsId),
+    enabled:  !!wsId,
+  });
+
+  const startEditChannel = (ch: ChannelResponse) => {
+    setEditingChannel(ch);
+    setRestrictRoles(ch.roleRestricted);
+    setSelectedRoles(ch.accessibleRoles ?? []);
+  };
+
+  const handleSaveRestrictions = async () => {
+    if (!editingChannel) return;
+    setSaving(true);
+    try {
+      await updateChannelRestrictions(wsId, editingChannel.id, {
+        roleRestricted: restrictRoles,
+        accessibleRoles: restrictRoles ? selectedRoles : [],
+      });
+      setEditingChannel(null);
+      onChannelCreated();
+    } catch {
+      // handle error silently
+    } finally {
+      setSaving(false);
+    }
+  };
   const handleCreate = async () => {
     if (!newName.trim()) return;
     await createChannel(wsId, { name: newName.trim() });
@@ -202,27 +235,98 @@ function WorkspaceSidebar({
         </div>
 
         {channels.map((ch) => (
-          <button
-            key={ch.id}
-            type="button"
-            onClick={() => void onChannelClick(ch)}
-            className={cn(
-              'w-full flex items-center gap-2 px-3 py-1.5 rounded mx-1 text-sm transition-colors text-left',
-              ch.id === activeChannelId
-                ? 'bg-brand-600 text-white'
-                : ch.isMember
-                  ? 'text-gray-300 hover:bg-gray-800'
-                  : 'text-gray-500 hover:bg-gray-800 border border-dashed border-gray-600',
-            )}
-            title={ch.isMember ? undefined : 'Click to join this channel'}
-          >
-            <Hash className="h-3.5 w-3.5 shrink-0 opacity-70" />
-            <span className="truncate flex-1">{ch.name}</span>
-            {!ch.isMember && (
-              <span className="text-[10px] uppercase tracking-wide opacity-70 shrink-0">Join</span>
-            )}
-          </button>
+          <div key={ch.id} className="group relative mx-1">
+            <button
+              type="button"
+              onClick={() => void onChannelClick(ch)}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors text-left',
+                ch.id === activeChannelId
+                  ? 'bg-brand-600 text-white'
+                  : ch.isMember
+                    ? 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-500 hover:bg-gray-800 border border-dashed border-gray-600',
+              )}
+              title={ch.isMember ? undefined : 'Click to join this channel'}
+            >
+              <Hash className="h-3.5 w-3.5 shrink-0 opacity-70" />
+              <span className="truncate flex-1">{ch.name}</span>
+              {!ch.isMember && (
+                <span className="text-[10px] uppercase tracking-wide opacity-70 shrink-0">Join</span>
+              )}
+              {ch.roleRestricted && (
+                <Lock className="h-3 w-3 shrink-0 opacity-50" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => startEditChannel(ch)}
+              className={cn(
+                'absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity',
+                ch.id === activeChannelId && 'text-white hover:text-white',
+              )}
+              title="Channel settings"
+            >
+              <Settings className="h-3 w-3" />
+            </button>
+          </div>
         ))}
+
+        {channels.length === 0 && (
+          <p className="px-3 py-4 text-xs text-gray-500 text-center">No channels yet.</p>
+        )}
+
+        {editingChannel && (
+          <div className="px-3 py-2 mx-1 mt-1 rounded bg-gray-800 text-gray-200 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-gray-300">#{editingChannel.name}</span>
+              <button
+                onClick={() => setEditingChannel(null)}
+                className="text-gray-500 hover:text-gray-300"
+              >✕</button>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={restrictRoles}
+                onChange={(e) => setRestrictRoles(e.target.checked)}
+                className="rounded"
+              />
+              Restrict access by role
+            </label>
+            {restrictRoles && (
+              <div className="space-y-1 pl-1">
+                {wsRoles.map((r) => (
+                  <label key={r.name} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedRoles.includes(r.name)}
+                      onChange={(e) => {
+                        setSelectedRoles((prev) =>
+                          e.target.checked
+                            ? [...prev, r.name]
+                            : prev.filter((x) => x !== r.name),
+                        );
+                      }}
+                      className="rounded"
+                    />
+                    {r.name}
+                  </label>
+                ))}
+                {wsRoles.length === 0 && (
+                  <p className="text-gray-500 italic">No roles defined.</p>
+                )}
+              </div>
+            )}
+            <button
+              onClick={handleSaveRestrictions}
+              disabled={saving}
+              className="w-full rounded bg-brand-600 hover:bg-brand-700 disabled:opacity-50 py-1 text-xs font-medium"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        )}
 
         {creating && (
           <div className="px-3 py-1.5 mx-1">

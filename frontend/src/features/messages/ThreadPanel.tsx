@@ -6,18 +6,25 @@ import MessageInput from './MessageInput';
 import { type MessageResponse } from './messageApi';
 
 interface Props {
+  workspaceId: string;
   channelId:   string;
   channelName: string;
   rootMessage: MessageResponse;
   onClose:     () => void;
 }
 
-export default function ThreadPanel({ channelId, channelName, rootMessage, onClose }: Props) {
-  const myId = useAuthStore((s) => s.user?.id);
+export default function ThreadPanel({ workspaceId, channelId, channelName, rootMessage, onClose }: Props) {
+  const myId   = useAuthStore((s) => s.user?.id);
+  const myName = useAuthStore((s) => s.user?.displayName);
   const { data, isLoading } = useThreadMessages(channelId, rootMessage.id);
 
   const replies = data?.replies ?? [];
   const summary = data?.summary;
+
+  const isMentioned = (msg: MessageResponse) =>
+    !msg.author.id || msg.author.id !== myId
+      ? myName != null && new RegExp('@' + escapeRegExp(myName), 'i').test(msg.body)
+      : false;
 
   return (
     <aside className="w-96 shrink-0 border-l border-gray-200 bg-white flex flex-col h-full">
@@ -53,6 +60,7 @@ export default function ThreadPanel({ channelId, channelName, rootMessage, onClo
           message={data?.root ?? rootMessage}
           channelId={channelId}
           isOwn={rootMessage.author.id === myId}
+          isMentioned={isMentioned(data?.root ?? rootMessage)}
           inThread
         />
         {isLoading && (
@@ -64,16 +72,22 @@ export default function ThreadPanel({ channelId, channelName, rootMessage, onClo
             message={msg}
             channelId={channelId}
             isOwn={msg.author.id === myId}
+            isMentioned={isMentioned(msg)}
             inThread
           />
         ))}
       </div>
 
       <MessageInput
+        workspaceId={workspaceId}
         channelId={channelId}
         channelName={channelName}
         threadRootId={rootMessage.id}
       />
     </aside>
   );
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
