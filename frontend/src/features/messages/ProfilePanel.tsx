@@ -167,6 +167,26 @@ export default function ProfilePanel({
               ) : null}
             </Section>
 
+            {/* Roles (visible to everyone) */}
+            {memberRoles.length > 0 && (
+              <Section label="Roles">
+                <div className="flex flex-wrap gap-1">
+                  {memberRoles.map((role) => (
+                    <span
+                      key={role}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        role === 'Admin' || role === 'Moderator'
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              </Section>
+            )}
+
           </div>
 
           {/* Role editing for admins */}

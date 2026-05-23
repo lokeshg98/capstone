@@ -541,7 +541,7 @@ function WelcomeMessageTab({ workspaceId }: { workspaceId: string }) {
 
 // ─── Roles ────────────────────────────────────────────────────────────────────
 
-function RolesTab({ workspaceId }: { workspaceId: string }) {
+export function RolesTab({ workspaceId }: { workspaceId: string }) {
   const qc = useQueryClient();
 
   const { data: roles = [], isLoading: rolesLoading } = useQuery({

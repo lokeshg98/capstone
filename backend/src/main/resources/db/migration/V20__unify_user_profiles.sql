@@ -19,9 +19,9 @@ FROM users
 WHERE (about_me IS NOT NULL OR interests IS NOT NULL OR status_message IS NOT NULL)
   AND NOT EXISTS (SELECT 1 FROM user_profiles WHERE user_profiles.user_id = users.id)
 ON CONFLICT (user_id) DO UPDATE SET
-    about_me       = COALESCE(user_profiles.about_me,       users.about_me),
-    interests      = COALESCE(user_profiles.interests,      users.interests),
-    status_message = COALESCE(user_profiles.status_message, users.status_message);
+    about_me       = COALESCE(user_profiles.about_me,       EXCLUDED.about_me),
+    interests      = COALESCE(user_profiles.interests,      EXCLUDED.interests),
+    status_message = COALESCE(user_profiles.status_message, EXCLUDED.status_message);
 
 -- Drop the profile columns that now live in user_profiles
 ALTER TABLE users DROP COLUMN IF EXISTS status_message;

@@ -6,6 +6,7 @@
 #   ./dev.sh                # start everything (DB, Redis, MinIO, backend, frontend)
 #   ./dev.sh --with-clamav  # also start ClamAV (slow first boot, ~300 MB)
 #   ./dev.sh --with-n8n     # also start n8n (weekly digest automation)
+#   ./dev.sh --reset-db     # wipe PostgreSQL data volume (fresh schema)
 #
 # Press Ctrl+C to stop the backend and frontend.
 # Docker containers keep running; stop them with:
@@ -18,10 +19,12 @@ ENV_FILE="$SCRIPT_DIR/infra/.env"
 LOG_DIR="$SCRIPT_DIR/.dev-logs"
 WITH_CLAMAV=false
 WITH_N8N=false
+RESET_DB=false
 
 for arg in "$@"; do
   [[ "$arg" == "--with-clamav" ]] && WITH_CLAMAV=true
   [[ "$arg" == "--with-n8n"    ]] && WITH_N8N=true
+  [[ "$arg" == "--reset-db"    ]] && RESET_DB=true
 done
 
 # ── Colours ──────────────────────────────────────────────────────────────────
@@ -185,6 +188,11 @@ mkdir -p "$LOG_DIR"
 
 # ── 1. Infrastructure ─────────────────────────────────────────────────────────
 log "Starting infrastructure containers..."
+
+if [[ "$RESET_DB" == true ]]; then
+  warn "Resetting PostgreSQL data volume..."
+  docker compose -f "$SCRIPT_DIR/infra/docker-compose.yml" down -v postgres 2>/dev/null || true
+fi
 COMPOSE_SERVICES="postgres redis minio"
 if [[ "$WITH_CLAMAV" == true ]]; then
   COMPOSE_SERVICES="$COMPOSE_SERVICES clamav"
