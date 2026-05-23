@@ -3,8 +3,10 @@
 # dev.sh — single command to start all Community Bot services locally
 #
 # Usage:
-#   ./dev.sh              # start everything
+#   ./dev.sh                # start everything (DB, Redis, MinIO, backend, frontend)
 #   ./dev.sh --with-clamav  # also start ClamAV (slow first boot, ~300 MB)
+#   ./dev.sh --with-n8n     # also start n8n (weekly digest automation)
+#   ./dev.sh --reset-db     # wipe PostgreSQL data volume (fresh schema)
 #
 # Press Ctrl+C to stop the backend and frontend.
 # Docker containers keep running; stop them with:
@@ -16,9 +18,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/infra/.env"
 LOG_DIR="$SCRIPT_DIR/.dev-logs"
 WITH_CLAMAV=false
+WITH_N8N=false
+RESET_DB=false
 
 for arg in "$@"; do
   [[ "$arg" == "--with-clamav" ]] && WITH_CLAMAV=true
+  [[ "$arg" == "--with-n8n"    ]] && WITH_N8N=true
+  [[ "$arg" == "--reset-db"    ]] && RESET_DB=true
 done
 
 # ── Colours ──────────────────────────────────────────────────────────────────
@@ -36,6 +42,14 @@ banner() {
   echo -e "  App         ${BLUE}http://localhost:3000${NC}  (React UI)"
   echo -e "  Home/API    ${BLUE}http://localhost:8080${NC}  (landing + OAuth + API)"
   echo -e "  MinIO UI    ${BLUE}http://localhost:9001${NC}  (minioadmin / minioadmin)"
+  if [[ "$WITH_N8N" == true ]]; then
+    echo -e "  n8n         ${BLUE}http://localhost:5678${NC}  (admin / admin)"
+  fi
+  echo -e ""
+  echo -e "  Demo accounts:"
+  echo -e "    ${YELLOW}admin@communitybot.local${NC}  /  Admin123!"
+  echo -e "    ${YELLOW}mod@communitybot.local${NC}   /  Mod123!"
+  echo -e "    ${YELLOW}user@communitybot.local${NC}   /  User123!"
   echo -e ""
   echo -e "  Backend log   .dev-logs/backend.log"
   echo -e "  Frontend log  .dev-logs/frontend.log"
@@ -73,10 +87,33 @@ check_gradle_wrapper() {
 # ── .env ─────────────────────────────────────────────────────────────────────
 load_env() {
   if [[ ! -f "$ENV_FILE" ]]; then
-    err ".env not found at infra/.env"
-    err "Run: cp infra/.env.example infra/.env  and fill in your secrets."
-    exit 1
+    warn "infra/.env not found — creating from infra/.env.example"
+    cp "$SCRIPT_DIR/infra/.env.example" "$ENV_FILE"
+
+    if command -v openssl &>/dev/null; then
+      local jwt
+      jwt=$(openssl rand -base64 64)
+      sed -i.bak "s|JWT_SECRET=REPLACE_WITH_STRONG_BASE64_SECRET|JWT_SECRET=$jwt|" "$ENV_FILE"
+      rm -f "$ENV_FILE.bak"
+      log "Generated a random JWT_SECRET."
+    else
+      warn "openssl not found — JWT_SECRET is still a placeholder."
+    fi
+
+    warn "infra/.env has been created from the template."
+    warn "Edit it to add real OAuth & OpenAI keys for full functionality."
   fi
+
+  local jwt_val
+  jwt_val=$(grep '^JWT_SECRET=' "$ENV_FILE" | cut -d= -f2-)
+  if [[ "$jwt_val" == "REPLACE_WITH_STRONG_BASE64_SECRET" && "$(command -v openssl)" ]]; then
+    local new_jwt
+    new_jwt=$(openssl rand -base64 64)
+    sed -i.bak "s|JWT_SECRET=REPLACE_WITH_STRONG_BASE64_SECRET|JWT_SECRET=$new_jwt|" "$ENV_FILE"
+    rm -f "$ENV_FILE.bak"
+    log "Replaced placeholder JWT_SECRET with a random key."
+  fi
+
   # Export every non-comment, non-empty line
   set -a
   # shellcheck source=/dev/null
@@ -151,10 +188,19 @@ mkdir -p "$LOG_DIR"
 
 # ── 1. Infrastructure ─────────────────────────────────────────────────────────
 log "Starting infrastructure containers..."
+
+if [[ "$RESET_DB" == true ]]; then
+  warn "Resetting PostgreSQL data volume..."
+  docker compose -f "$SCRIPT_DIR/infra/docker-compose.yml" down -v postgres 2>/dev/null || true
+fi
 COMPOSE_SERVICES="postgres redis minio"
 if [[ "$WITH_CLAMAV" == true ]]; then
   COMPOSE_SERVICES="$COMPOSE_SERVICES clamav"
   warn "ClamAV included. First start downloads ~300 MB of signatures (3-5 min)."
+fi
+if [[ "$WITH_N8N" == true ]]; then
+  COMPOSE_SERVICES="$COMPOSE_SERVICES n8n"
+  warn "n8n included (http://localhost:5678 — admin / admin)."
 fi
 
 # shellcheck disable=SC2086

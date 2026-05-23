@@ -7,12 +7,13 @@ import {
   type ModerationFlagResponse, type FlagStatus,
 } from './moderationApi';
 import { cn } from '@/lib/utils';
+import { RolesTab } from '@/features/workspace/WorkspaceSettings';
 
 interface Props {
   workspaceId: string;
 }
 
-type Tab = 'flags' | 'bans';
+type Tab = 'flags' | 'bans' | 'roles';
 
 export default function ModerationDashboard({ workspaceId }: Props) {
   const [tab,          setTab]          = useState<Tab>('flags');
@@ -28,7 +29,7 @@ export default function ModerationDashboard({ workspaceId }: Props) {
 
       {/* Tabs */}
       <div className="shrink-0 flex border-b border-gray-200 px-5">
-        {(['flags', 'bans'] as Tab[]).map((t) => (
+        {(['flags', 'bans', 'roles'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -39,7 +40,7 @@ export default function ModerationDashboard({ workspaceId }: Props) {
                 : 'border-transparent text-gray-500 hover:text-gray-700',
             )}
           >
-            {t === 'flags' ? 'Flagged Messages' : 'Bans'}
+            {t === 'flags' ? 'Flagged Messages' : t === 'bans' ? 'Bans' : 'Roles'}
           </button>
         ))}
       </div>
@@ -53,6 +54,11 @@ export default function ModerationDashboard({ workspaceId }: Props) {
           />
         )}
         {tab === 'bans' && <BansPanel workspaceId={workspaceId} />}
+        {tab === 'roles' && (
+          <div className="p-5">
+            <RolesTab workspaceId={workspaceId} />
+          </div>
+        )}
       </div>
     </div>
   );

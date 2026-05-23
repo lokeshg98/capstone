@@ -21,6 +21,9 @@ public class UserProfile {
     @Column(name = "user_id")
     private UUID userId;
 
+    @Column(name = "status_message")
+    private String statusMessage;
+
     @Column(name = "about_me", columnDefinition = "TEXT")
     private String aboutMe;
 
@@ -55,6 +58,7 @@ public class UserProfile {
     }
 
     public void update(
+            String statusMessage,
             String aboutMe,
             String phone,
             boolean showEmail,
@@ -62,6 +66,7 @@ public class UserProfile {
             String interests,
             NotificationMode notificationMode
     ) {
+        this.statusMessage     = statusMessage != null ? statusMessage : this.statusMessage;
         this.aboutMe           = aboutMe;
         this.phone             = phone;
         this.showEmail         = showEmail;

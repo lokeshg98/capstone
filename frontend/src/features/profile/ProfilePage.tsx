@@ -21,6 +21,7 @@ export default function ProfilePage() {
     queryFn:  fetchMyProfile,
   });
 
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [aboutMe, setAboutMe] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
   const [showEmail, setShowEmail] = useState<boolean | null>(null);
@@ -32,6 +33,7 @@ export default function ProfilePage() {
     mutationFn: updateMyProfile,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-profile'] });
+      setStatusMessage(null);
       setAboutMe(null);
       setPhone(null);
       setShowEmail(null);
@@ -49,6 +51,7 @@ export default function ProfilePage() {
     );
   }
 
+  const currentStatus = statusMessage ?? profile.statusMessage ?? '';
   const currentAbout = aboutMe ?? profile.aboutMe ?? '';
   const currentPhone = phone ?? profile.phone ?? '';
   const currentShowEmail = showEmail ?? profile.showEmail;
@@ -57,6 +60,7 @@ export default function ProfilePage() {
   const currentNotify = notificationMode ?? profile.notificationMode;
 
   const dirty =
+    statusMessage !== null ||
     aboutMe !== null ||
     phone !== null ||
     showEmail !== null ||
@@ -66,6 +70,7 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     saveMut.mutate({
+      statusMessage:   currentStatus,
       aboutMe:          currentAbout,
       phone:            currentPhone,
       showEmail:        currentShowEmail,
@@ -98,6 +103,18 @@ export default function ProfilePage() {
           <p className="text-sm text-gray-600">
             {profile.displayName ?? 'Member'} · {profile.email}
           </p>
+
+          <label className="block">
+            <span className="text-xs font-medium text-gray-600">Status message</span>
+            <input
+              type="text"
+              value={currentStatus}
+              onChange={(e) => setStatusMessage(e.target.value)}
+              placeholder="What's on your mind?"
+              maxLength={200}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </label>
 
           <label className="block">
             <span className="text-xs font-medium text-gray-600">About me</span>
@@ -183,6 +200,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => {
+                setStatusMessage(null);
                 setAboutMe(null);
                 setPhone(null);
                 setShowEmail(null);

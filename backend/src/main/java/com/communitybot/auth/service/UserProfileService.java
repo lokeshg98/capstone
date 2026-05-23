@@ -41,6 +41,7 @@ public class UserProfileService {
                         .collect(Collectors.joining(","));
 
         profile.update(
+                req.statusMessage() != null ? req.statusMessage() : profile.getStatusMessage(),
                 req.aboutMe() != null ? req.aboutMe() : profile.getAboutMe(),
                 req.phone() != null ? req.phone() : profile.getPhone(),
                 req.showEmail() != null ? req.showEmail() : profile.isShowEmail(),

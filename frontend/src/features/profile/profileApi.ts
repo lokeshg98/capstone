@@ -7,6 +7,7 @@ export interface UserProfileDetail {
   email:              string;
   displayName:        string | null;
   avatarUrl:          string | null;
+  statusMessage:      string | null;
   aboutMe:            string | null;
   phone:              string | null;
   showEmail:          boolean;
@@ -17,6 +18,7 @@ export interface UserProfileDetail {
 }
 
 export interface UpdateUserProfileRequest {
+  statusMessage?:     string;
   aboutMe?:           string;
   phone?:             string;
   showEmail?:         boolean;

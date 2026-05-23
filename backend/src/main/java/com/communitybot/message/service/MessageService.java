@@ -8,6 +8,7 @@ import com.communitybot.auth.service.UserService;
 import com.communitybot.channel.domain.Channel;
 import com.communitybot.channel.service.ChannelService;
 import com.communitybot.workspace.service.BanService;
+import com.communitybot.workspace.service.WorkspaceService;
 import com.communitybot.message.domain.Message;
 import com.communitybot.message.domain.MessageStatus;
 import com.communitybot.message.domain.Reaction;
@@ -44,6 +45,7 @@ public class MessageService {
     private final ChannelService            channelService;
     private final UserService               userService;
     private final BanService                banService;
+    private final WorkspaceService          workspaceService;
     private final ApplicationEventPublisher eventPublisher;
 
     /** Sends a new message and returns the persisted DTO (used by both HTTP and WS paths). */
@@ -163,8 +165,7 @@ public class MessageService {
         channelService.requireChannelMember(channelId, requesterId);
         Message msg = getOrThrow(messageId);
         if (!msg.getAuthor().getId().equals(requesterId)) {
-            // TODO: also allow workspace moderators once roles are propagated to this layer
-            throw new AppException(ErrorCode.MESSAGE_FORBIDDEN);
+            workspaceService.requireModeratorOrAdmin(msg.getWorkspaceId(), requesterId);
         }
         msg.delete();
     }
