@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, type KeyboardEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Send, Smile } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -7,9 +8,12 @@ import FileUploadButton from './FileUploadButton';
 import { type AttachmentResponse } from './attachmentApi';
 import EmojiPicker from '@/features/emoji/EmojiPicker';
 import { type EmojiSearchResult } from '@/features/emoji/emojiApi';
+import MentionAutocomplete from './MentionAutocomplete';
+import { searchMentions, type MentionSuggestion } from './memberApi';
 import type { MessageResponse, PageResponse } from './messageApi';
 
 interface Props {
+  workspaceId:  string;
   channelId:    string;
   channelName:  string;
   threadRootId?: string | null;
@@ -20,6 +24,7 @@ interface Props {
 }
 
 export default function MessageInput({
+  workspaceId,
   channelId,
   channelName,
   threadRootId = null,
@@ -34,6 +39,54 @@ export default function MessageInput({
   const [pendingAttachment, setPendingAttachment] = useState<AttachmentResponse | null>(null);
   const qc = useQueryClient();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Mention autocomplete ──────────────────────────────────────────────────
+  const [mentionSelected, setMentionSelected] = useState(0);
+  const mentionStartRef = useRef(-1);
+  const cursorRef = useRef(0);
+
+  const mentionQuery = useMemo(() => {
+    const pos = cursorRef.current;
+    const before = body.slice(0, pos);
+    const lastAt = before.lastIndexOf('@');
+    if (lastAt === -1) return '';
+    const afterAt = before.slice(lastAt + 1);
+    if (afterAt.includes(' ') || afterAt.includes('\n')) return '';
+    mentionStartRef.current = lastAt;
+    return afterAt;
+  }, [body]);
+
+  const mentionActive = mentionQuery !== '';
+
+  const { data: mentionSuggestions = [] } = useQuery({
+    queryKey: ['mentions', workspaceId, channelId, mentionQuery],
+    queryFn:  () => searchMentions(workspaceId, channelId, mentionQuery),
+    enabled:  mentionActive && mentionQuery.length >= 1,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => { setMentionSelected(0); }, [mentionQuery]);
+
+  const applyMention = useCallback((s: MentionSuggestion) => {
+    const start = mentionStartRef.current;
+    if (start < 0) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    const pos = cursorRef.current;
+    const inserted = '@' + s.displayName + ' ';
+    const replacement = body.slice(0, start) + inserted + body.slice(pos);
+    const newCursor = start + inserted.length;
+    cursorRef.current = newCursor;
+    mentionStartRef.current = -1;
+    setBody(replacement);
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return;
+      textareaRef.current.setSelectionRange(newCursor, newCursor);
+      textareaRef.current.focus();
+    });
+  }, [body]);
+
+  // ── End mention autocomplete ──────────────────────────────────────────────
 
   const appendToCache = (newMsg: MessageResponse) => {
     if (newMsg.threadRootId) {
@@ -151,6 +204,29 @@ export default function MessageInput({
   }, [sending]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionActive && mentionSuggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionSelected((p) => (p + 1) % mentionSuggestions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionSelected((p) => (p - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        applyMention(mentionSuggestions[mentionSelected]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        mentionStartRef.current = -1;
+        setBody((prev) => prev);
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       void send();
@@ -158,6 +234,7 @@ export default function MessageInput({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    cursorRef.current = e.target.selectionStart;
     setBody(e.target.value);
     const el = e.target;
     el.style.height = 'auto';
@@ -173,7 +250,7 @@ export default function MessageInput({
       )}
 
       <div className={cn(
-        'rounded-xl border bg-white transition-shadow',
+        'rounded-xl border bg-white transition-shadow relative',
         'focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent',
         'border-gray-300',
       )}
@@ -186,6 +263,14 @@ export default function MessageInput({
               onClear={() => setPendingAttachment(null)}
             />
           </div>
+        )}
+
+        {mentionActive && mentionSuggestions.length > 0 && (
+          <MentionAutocomplete
+            suggestions={mentionSuggestions}
+            selectedIndex={mentionSelected}
+            onSelect={applyMention}
+          />
         )}
 
         <div className="flex items-end gap-2 px-3 py-2">

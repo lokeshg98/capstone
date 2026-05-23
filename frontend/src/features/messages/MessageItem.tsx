@@ -12,6 +12,7 @@ interface Props {
   message:      MessageResponse;
   channelId:    string;
   isOwn:        boolean;
+  isMentioned?: boolean;
   inThread?:    boolean;
   onOpenThread?: (message: MessageResponse) => void;
 }
@@ -21,6 +22,7 @@ export default function MessageItem({
   message,
   channelId,
   isOwn,
+  isMentioned,
   inThread,
   onOpenThread,
 }: Props) {
@@ -71,7 +73,11 @@ export default function MessageItem({
   });
 
   return (
-    <div className={cn('flex items-start gap-3 px-4 py-1.5 group hover:bg-gray-50 relative', message.pending && 'opacity-70')}>
+    <div className={cn(
+      'flex items-start gap-3 px-4 py-1.5 group hover:bg-gray-50 relative',
+      message.pending && 'opacity-70',
+      isMentioned && 'bg-amber-50 border-l-2 border-amber-400 hover:bg-amber-100',
+    )}>
       <div className="h-8 w-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0 mt-0.5">
         {message.author.avatarUrl ? (
           <img

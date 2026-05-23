@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Hash, Users } from 'lucide-react';
 import { type ChannelResponse } from '@/features/channels/channelApi';
 import { type MessageResponse } from './messageApi';
@@ -22,6 +22,11 @@ export default function ChatArea({ channel, showMembers, onToggleMembers }: Prop
   } = useChannelMessages(channel.id);
   const [pendingMessages, setPendingMessages] = useState<MessageResponse[]>([]);
   const [openThread, setOpenThread] = useState<MessageResponse | null>(null);
+
+  useEffect(() => {
+    setPendingMessages([]);
+    setOpenThread(null);
+  }, [channel.id]);
 
   const displayMessages = useMemo(() => {
     const byId = new Map<string, MessageResponse>();
@@ -64,6 +69,7 @@ export default function ChatArea({ channel, showMembers, onToggleMembers }: Prop
 
         {!openThread && (
           <MessageInput
+            workspaceId={channel.workspaceId}
             channelId={channel.id}
             channelName={channel.name}
             addOptimisticMessage={(msg) => setPendingMessages((prev) => [...prev, msg])}
@@ -78,6 +84,7 @@ export default function ChatArea({ channel, showMembers, onToggleMembers }: Prop
 
       {openThread && (
         <ThreadPanel
+          workspaceId={channel.workspaceId}
           channelId={channel.id}
           channelName={channel.name}
           rootMessage={openThread}

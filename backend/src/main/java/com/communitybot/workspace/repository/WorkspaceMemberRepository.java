@@ -22,4 +22,13 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
             WHERE wm.workspace.id = :workspaceId
             """)
     List<WorkspaceMember> findAllByWorkspaceId(UUID workspaceId);
+
+    @Query("""
+            SELECT wm FROM WorkspaceMember wm
+            JOIN FETCH wm.user u
+            WHERE wm.workspace.id = :workspaceId
+              AND LOWER(u.displayName) LIKE LOWER(CONCAT('%', :query, '%'))
+            ORDER BY u.displayName ASC
+            """)
+    List<WorkspaceMember> searchByDisplayNameOrEmail(UUID workspaceId, String query);
 }

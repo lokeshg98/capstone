@@ -3,6 +3,8 @@ package com.communitybot.channel.controller;
 import com.communitybot.channel.dto.ChannelMemberResponse;
 import com.communitybot.channel.dto.ChannelResponse;
 import com.communitybot.channel.dto.CreateChannelRequest;
+import com.communitybot.channel.dto.MentionSuggestion;
+import com.communitybot.channel.dto.UpdateChannelRestrictionsRequest;
 import com.communitybot.channel.service.ChannelService;
 import com.communitybot.realtime.service.PresenceService;
 import com.communitybot.shared.dto.ApiResponse;
@@ -72,5 +74,27 @@ public class ChannelController {
                         presenceService.isOnline(m.userId()), m.roles()))
                 .toList();
         return ResponseEntity.ok(ApiResponse.ok(enriched));
+    }
+
+    @GetMapping("/{channelId}/members/search")
+    public ResponseEntity<ApiResponse<List<MentionSuggestion>>> searchMentions(
+            @PathVariable UUID wsId,
+            @PathVariable UUID channelId,
+            @RequestParam String q,
+            @CurrentUser UUID userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                channelService.searchMentions(wsId, channelId, userId, q)));
+    }
+
+    @PutMapping("/{channelId}/restrictions")
+    public ResponseEntity<ApiResponse<ChannelResponse>> updateRestrictions(
+            @PathVariable UUID wsId,
+            @PathVariable UUID channelId,
+            @Valid @RequestBody UpdateChannelRestrictionsRequest req,
+            @CurrentUser UUID userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                channelService.updateRestrictions(wsId, channelId, req, userId)));
     }
 }

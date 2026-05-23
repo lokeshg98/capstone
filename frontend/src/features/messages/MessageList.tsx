@@ -12,7 +12,8 @@ interface Props {
 
 export default function MessageList({ messages, channelId, isLoading, onOpenThread }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const myId      = useAuthStore((s) => s.user?.id);
+  const myId   = useAuthStore((s) => s.user?.id);
+  const myName = useAuthStore((s) => s.user?.displayName);
 
   // Scroll to bottom whenever new messages arrive
   useEffect(() => {
@@ -31,18 +32,28 @@ export default function MessageList({ messages, channelId, isLoading, onOpenThre
 
   return (
     <div className="flex-1 overflow-y-auto py-2">
-      {messages.map((msg) => (
-        <MessageItem
-          key={msg.id}
-          message={msg}
-          channelId={channelId}
-          isOwn={msg.author.id === myId}
-          onOpenThread={onOpenThread}
-        />
-      ))}
+      {messages.map((msg) => {
+        const isOwn = msg.author.id === myId;
+        const isMentioned = !isOwn && myName != null
+          && new RegExp('@' + escapeRegExp(myName), 'i').test(msg.body);
+        return (
+          <MessageItem
+            key={msg.id}
+            message={msg}
+            channelId={channelId}
+            isOwn={isOwn}
+            isMentioned={isMentioned}
+            onOpenThread={onOpenThread}
+          />
+        );
+      })}
       <div ref={bottomRef} />
     </div>
   );
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function LoadingSkeleton() {

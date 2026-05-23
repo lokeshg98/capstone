@@ -16,11 +16,16 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class BotMentionListener {
+
+    private static final Pattern MENTION_PATTERN = Pattern.compile(
+            "(?i)@bot\\b|@" + Pattern.quote(normalizeName(BotUserInitializer.BOT_DISPLAY_NAME)) + "\\p{So}*\\b"
+    );
 
     private final MultiAgentService   multiAgentService;
     private final MessageService     messageService;
@@ -30,7 +35,7 @@ public class BotMentionListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageSent(MessageSentEvent event) {
-        if (!event.body().toLowerCase().contains("@bot")) return;
+        if (!MENTION_PATTERN.matcher(event.body()).find()) return;
 
         UUID botId = userRepository.findByEmail(BotUserInitializer.BOT_EMAIL)
                 .map(User::getId).orElse(null);
@@ -38,7 +43,7 @@ public class BotMentionListener {
 
         log.info("Bot mention detected in channel={} message={}", event.channelId(), event.messageId());
         try {
-            String question = event.body().replaceAll("(?i)@bot", "").strip();
+            String question = MENTION_PATTERN.matcher(event.body()).replaceAll("").strip();
             if (question.isBlank()) question = "What can you help me with?";
 
             String answer = multiAgentService
@@ -65,5 +70,9 @@ public class BotMentionListener {
         } catch (Exception e) {
             log.error("Bot failed to respond to message {}: {}", event.messageId(), e.getMessage(), e);
         }
+    }
+
+    private static String normalizeName(String displayName) {
+        return displayName.replaceAll("[^\\p{ASCII}]", "").strip();
     }
 }
