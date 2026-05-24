@@ -67,3 +67,27 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+/** Load infra/.env so `./gradlew :backend:bootRun` works without manually sourcing env vars. */
+fun loadInfraDotEnv(): Map<String, String> {
+    val envFile = rootProject.projectDir.resolve("infra/.env")
+    if (!envFile.isFile) return emptyMap()
+    return envFile.readLines()
+        .mapNotNull { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) return@mapNotNull null
+            val eq = trimmed.indexOf('=')
+            if (eq <= 0) return@mapNotNull null
+            trimmed.substring(0, eq).trim() to trimmed.substring(eq + 1).trim()
+        }
+        .toMap()
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    val dotenv = loadInfraDotEnv()
+    dotenv.forEach { (key, value) -> environment(key, value) }
+    val profile = System.getenv("SPRING_PROFILES_ACTIVE") ?: dotenv["SPRING_PROFILES_ACTIVE"]
+    if (profile != null && !profile.isBlank()) {
+        args("--spring.profiles.active=$profile")
+    }
+}
