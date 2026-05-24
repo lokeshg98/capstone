@@ -88,11 +88,18 @@ public class CommunityAgentTools {
             String vec = DocumentIngestionService.floatArrayToVectorString(emb);
             List<FaqSearchChunkRow> rows = documentChunkRepository.findTopFaqChunksWithTitles(ctx.workspaceId(), vec);
             log.info("searchFaqDocuments: query='{}' workspaceId={} rowsFound={}", query, ctx.workspaceId(), rows.size());
+            if (!rows.isEmpty()) {
+                String first = rows.get(0).getChunkText();
+                log.info("searchFaqDocuments first chunk: doc='{}' text='{}...'",
+                        rows.get(0).getDocumentTitle(),
+                        first.length() > 200 ? first.substring(0, 200) : first);
+            }
             if (rows.isEmpty()) {
                 return "No FAQ chunks retrieved. The workspace may have no ingested documents yet.";
             }
             AgentRunState state = AgentRunStateHolder.get();
             StringJoiner joiner = new StringJoiner("\n\n---\n\n");
+            joiner.add("Answer the user's question using ONLY the following document excerpts. If none are relevant, say so:");
             for (FaqSearchChunkRow row : rows) {
                 if (state != null) {
                     state.addCitation(row.getDocumentTitle(), row.getChunkText(), row.getChunkIndex());

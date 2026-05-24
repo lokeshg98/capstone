@@ -35,7 +35,7 @@ public class WorkspaceMember extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "workspace_member_roles",
         joinColumns = @JoinColumn(name = "member_id"),

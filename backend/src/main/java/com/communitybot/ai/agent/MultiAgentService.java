@@ -134,7 +134,7 @@ public class MultiAgentService {
             try {
                 answer = graphService.runSync(composed, memId);
             } catch (Exception agentErr) {
-                log.warn("Ask Bot agent failed, using FAQ fallback: {}", agentErr.getMessage());
+                log.error("Ask Bot agent failed, using FAQ fallback", agentErr);
                 answer = faqFallbackAnswer(question);
                 AgentRunState st = AgentRunStateHolder.get();
                 if (st != null) {

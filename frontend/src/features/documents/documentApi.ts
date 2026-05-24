@@ -27,6 +27,10 @@ export async function fetchDocuments(workspaceId: string): Promise<FaqDocumentRe
   return res.data.data;
 }
 
+export async function deleteDocument(workspaceId: string, documentId: string): Promise<void> {
+  await api.delete(`/workspaces/${workspaceId}/documents/${documentId}`);
+}
+
 export interface AskCitation {
   documentTitle: string;
   chunkText:     string;

@@ -117,3 +117,10 @@ export async function removeReaction(
   );
   return res.data.data;
 }
+
+export async function deleteMessage(
+  channelId: string,
+  messageId: string,
+): Promise<void> {
+  await api.delete(`/channels/${channelId}/messages/${messageId}`);
+}

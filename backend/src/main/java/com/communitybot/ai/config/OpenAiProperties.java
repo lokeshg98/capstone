@@ -18,7 +18,7 @@ public class OpenAiProperties {
     private String apiKey;
     private String embeddingModel = "text-embedding-3-small";
     private String chatModel      = "gpt-4o-mini";
-    private int    maxTokens      = 512;
+    private int    maxTokens      = 2048;
     private double temperature    = 0.7;
     /** Max RAG calls per workspace per calendar day (cost guardrail). */
     private int    dailyRagLimit  = 100;

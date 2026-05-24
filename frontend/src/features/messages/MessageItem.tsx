@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, SmilePlus } from 'lucide-react';
-import { type MessageResponse, addReaction, removeReaction, type PageResponse } from './messageApi';
+import { MessageSquare, SmilePlus, Trash2 } from 'lucide-react';
+import { type MessageResponse, addReaction, removeReaction, deleteMessage, type PageResponse } from './messageApi';
 import EmojiPicker from '@/features/emoji/EmojiPicker';
 import { type EmojiSearchResult, emojiImageUrl } from '@/features/emoji/emojiApi';
 import AttachmentDisplay from './AttachmentDisplay';
@@ -56,6 +56,16 @@ export default function MessageItem({
           };
         });
       }
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => deleteMessage(channelId, message.id),
+    onSuccess: () => {
+      qc.setQueryData<PageResponse<MessageResponse>>(['messages', channelId], (prev) => {
+        if (!prev) return prev;
+        return { ...prev, content: prev.content.filter((m) => m.id !== message.id) };
+      });
     },
   });
 
@@ -180,6 +190,21 @@ export default function MessageItem({
                 />
               )}
             </div>
+          )}
+
+          {message.status !== 'DELETED' && (
+            <button
+              type="button"
+              onClick={() => { if (!deleteMut.isPending) deleteMut.mutate(); }}
+              disabled={deleteMut.isPending}
+              className={cn(
+                'inline-flex items-center gap-1 text-xs text-gray-500 hover:text-red-500',
+                'opacity-0 group-hover:opacity-100 transition-opacity',
+              )}
+              title="Delete message"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
       </div>

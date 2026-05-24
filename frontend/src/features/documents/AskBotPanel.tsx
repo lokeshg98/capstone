@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Send, FileText, Upload, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, Send, FileText, Upload, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import {
   streamAgentAsk,
   confirmAgentAction,
@@ -8,7 +8,7 @@ import {
   type AgentCitationPayload,
   type ProposalPayload,
 } from './agentApi';
-import { fetchDocuments, ingestDocument } from './documentApi';
+import { fetchDocuments, ingestDocument, deleteDocument } from './documentApi';
 import { uploadAttachment } from '@/features/messages/attachmentApi';
 import { cn } from '@/lib/utils';
 import { AgentTimeline, type ToolCallEntry } from './AgentTimeline';
@@ -364,10 +364,23 @@ export default function AskBotPanel({ workspaceId }: Props) {
               <p className="text-xs text-gray-400 py-2">No documents yet. Upload a PDF, DOCX, TXT, or MD file to get started.</p>
             )}
             {docs.map((doc) => (
-              <div key={doc.id} className="flex items-center gap-2 py-1.5 text-sm text-gray-700">
+              <div key={doc.id} className="flex items-center gap-2 py-1.5 text-sm text-gray-700 group">
                 <FileText className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                 <span className="flex-1 truncate">{doc.title}</span>
                 <span className="text-xs text-gray-400 shrink-0">{doc.chunkCount} chunks</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await deleteDocument(workspaceId, doc.id);
+                      refetchDocs();
+                    } catch { /* backend handles auth */ }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-gray-400 hover:text-red-500 shrink-0"
+                  title="Delete document"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
           </div>

@@ -77,7 +77,7 @@ app:
     api-key:         ${OPENAI_API_KEY}
     embedding-model: text-embedding-3-small
     chat-model:      gpt-4o-mini
-    max-tokens:      512
+    max-tokens:      2048
     temperature:     0.7
     daily-rag-limit: 100       # max RAG calls per workspace per calendar day
     model-rates:

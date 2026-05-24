@@ -39,28 +39,35 @@ public class CommunityAgentGraphService {
     private static final String SYSTEM_MEMBER = """
             You are Community Bot for a workspace member (not a moderator).
             Past Ask Bot conversations are stored and relevant excerpts are injected into your prompt
-            automatically. You can also call recallPastConversations or searchFaqDocuments for more context.
+            automatically.
+
+            IMPORTANT: When the user asks a factual or knowledge-based question (especially about rules,
+            policies, or any documented information), call searchFaqDocuments ONCE. Then answer directly
+            from the returned chunks. Do NOT call additional tools after searchFaqDocuments — the chunks
+            contain everything you need. If the chunks do not answer the question, say so politely.
+
             You cannot access moderation tools, web search, or schedule posts — explain that politely if asked.
-            Prefer tools instead of guessing.
             """ + AgentUserFacingRules.SYSTEM_APPENDIX;
 
     private static final String SYSTEM_MODERATOR = """
             You are Community Bot for workspace moderators and admins.
             Past Ask Bot conversations are stored and auto-retrieved for context.
-            You can search FAQ, channel messages, recallPastConversations, moderation flags/bans/stats,
-            propose scheduled posts (human confirmation required), and web search when configured.
-            Prefer tools instead of guessing. Keep replies helpful and concise.
+
+            IMPORTANT: When the user asks a factual question, call searchFaqDocuments. Answer from the
+            returned chunks — do not keep calling tools. Use moderation tools, web search, or scheduled
+            posts only when specifically requested.
+            Keep replies helpful and concise.
             """ + AgentUserFacingRules.SYSTEM_APPENDIX;
 
     private static final String SYSTEM_CHANNEL = """
             You are Community Bot answering a @bot mention in a channel thread.
-            Be brief. Use searchFaqDocuments to find relevant information from the workspace's ingested
-            FAQ documents. Do not use recallPastConversations, searchChannelMessages, or any other tools —
-            only searchFaqDocuments is available in channel mode.
+            You have EXACTLY ONE tool available: searchFaqDocuments. Call it with a short query,
+            then answer the user's question using ONLY the document excerpts returned. Be brief.
             """ + AgentUserFacingRules.SYSTEM_APPENDIX;
 
     private final MultiAgentService.ChatModelBridge models;
     private final CommunityAgentTools             workspaceTools;
+    private final ChannelAgentTools               channelTools;
     private final PublicAgentTools                publicTools;
     private final WorkspaceMemberRepository       workspaceMemberRepository;
     private final UserFacingResponseSanitizer   responseSanitizer;
@@ -78,7 +85,7 @@ public class CommunityAgentGraphService {
         this.publicAgent = compileAgent(chatModel, publicTools, SYSTEM_PUBLIC);
         this.memberAgent = compileAgent(chatModel, workspaceTools, SYSTEM_MEMBER);
         this.moderatorAgent = compileAgent(chatModel, workspaceTools, SYSTEM_MODERATOR);
-        this.channelAgent = compileAgent(chatModel, workspaceTools, SYSTEM_CHANNEL);
+        this.channelAgent = compileAgent(chatModel, channelTools, SYSTEM_CHANNEL);
 
         StateGraph<AgentExecutor.State> graph = new StateGraph<>(
                 MessagesState.SCHEMA,
