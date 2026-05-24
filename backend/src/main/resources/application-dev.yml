@@ -29,9 +29,7 @@ app:
     # Set OPENAI_API_KEY env var (or override here for local dev only — never commit a real key!)
     # api-key: sk-proj-...
   moderation:
-    # Disable auto-classification in dev to avoid OpenAI cost on every message.
-    # Set to true when demoing the moderation pipeline.
-    classification-enabled: false
+    classification-enabled: true
 
 logging:
   level:
