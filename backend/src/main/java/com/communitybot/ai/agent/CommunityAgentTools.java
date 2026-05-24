@@ -87,6 +87,7 @@ public class CommunityAgentTools {
             float[] emb = embeddingService.embed(query);
             String vec = DocumentIngestionService.floatArrayToVectorString(emb);
             List<FaqSearchChunkRow> rows = documentChunkRepository.findTopFaqChunksWithTitles(ctx.workspaceId(), vec);
+            log.info("searchFaqDocuments: query='{}' workspaceId={} rowsFound={}", query, ctx.workspaceId(), rows.size());
             if (rows.isEmpty()) {
                 return "No FAQ chunks retrieved. The workspace may have no ingested documents yet.";
             }
@@ -109,6 +110,9 @@ public class CommunityAgentTools {
             + "Finds semantically similar Q&A from this user in this workspace.")
     public String recallPastConversations(String query) {
         AgentContext ctx = requireContext();
+        if (ctx.constrainedChannelMode()) {
+            return "Conversation memory search is not available in channel mode. Use searchFaqDocuments instead.";
+        }
         emitStep("memory_recall", query);
         try {
             float[] emb = embeddingService.embed(query);

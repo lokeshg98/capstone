@@ -361,7 +361,7 @@ export default function AskBotPanel({ workspaceId }: Props) {
           <div className="px-5 pb-4 space-y-2 max-h-64 overflow-y-auto">
             <UploadAndIngest workspaceId={workspaceId} onIngested={refetchDocs} />
             {docs.length === 0 && (
-              <p className="text-xs text-gray-400 py-2">No documents yet. Upload a PDF or DOCX to get started.</p>
+              <p className="text-xs text-gray-400 py-2">No documents yet. Upload a PDF, DOCX, TXT, or MD file to get started.</p>
             )}
             {docs.map((doc) => (
               <div key={doc.id} className="flex items-center gap-2 py-1.5 text-sm text-gray-700">
@@ -420,7 +420,7 @@ function UploadAndIngest({
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
         className="hidden"
         onChange={handle}
       />

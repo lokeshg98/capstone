@@ -34,6 +34,7 @@ public class ThreadSummaryListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageSent(MessageSentEvent event) {
+        log.debug("ThreadSummaryListener triggered: threadRootId={} authorId={}", event.threadRootId(), event.authorId());
         if (!properties.isEnabled()) {
             return;
         }

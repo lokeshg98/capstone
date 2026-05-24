@@ -6,6 +6,7 @@ import com.communitybot.ai.usage.LlmUsageCategory;
 import com.communitybot.ai.usage.LlmUsageService;
 import com.communitybot.auth.domain.User;
 import com.communitybot.auth.repository.UserRepository;
+import com.communitybot.channel.service.ChannelService;
 import com.communitybot.message.domain.ThreadSummary;
 import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.repository.ThreadSummaryRepository;
@@ -66,6 +67,7 @@ public class ThreadSummaryService {
     private final ChatModel                chatModel;
     private final LlmUsageService          llmUsageService;
     private final OpenAiProperties         openAiProperties;
+    private final ChannelService           channelService;
     private final com.communitybot.message.config.ThreadSummaryProperties properties;
 
     @Transactional(readOnly = true)
@@ -105,6 +107,8 @@ public class ThreadSummaryService {
 
         String digest = generateDigest(transcript.text(), bot.getId());
         String postedBody = formatBotPost(digest, transcript.messageCount());
+
+        channelService.ensureBotInChannel(transcript.channelId());
 
         MessageResponse botMsg = messageService.send(
                 transcript.channelId(),

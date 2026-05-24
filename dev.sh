@@ -224,7 +224,7 @@ log "Bucket ready."
 log "Starting backend  (logs → .dev-logs/backend.log)..."
 (
   cd "$SCRIPT_DIR"
-  ./gradlew :backend:bootRun --args='--spring.profiles.active=dev'
+  ./gradlew :backend:bootRun
 ) > "$LOG_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
 

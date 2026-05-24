@@ -1,0 +1,152 @@
+Community Bot — Platform Rules & Guidelines
+===========================================
+
+1. BE RESPECTFUL
+
+Treat all members with kindness and professionalism. No personal attacks,
+insults, name-calling, trolling, or aggressive behavior. Disagreements are
+welcome — keep them constructive and focused on ideas rather than people.
+Assume good intent and give people the benefit of the doubt.
+
+2. NO HARASSMENT
+
+Harassment of any kind is strictly prohibited. This includes bullying,
+intimidation, stalking, repeated unwanted contact, sexual harassment, and
+making threats of any kind. If someone asks you to stop contacting them,
+respect that request immediately. Violations result in moderation action
+without warning.
+
+3. NO SPAM OR SELF-PROMOTION
+
+Do not spam channels with repeated messages, excessive emoji, or large blocks
+of text. Do not send unsolicited direct messages to other members. Self-
+promotion, advertising, and sharing of referral or affiliate links requires
+prior admin approval. Occasional sharing of genuinely relevant resources in
+the #resources channel is acceptable.
+
+4. NO NSFW CONTENT
+
+Not Safe For Work (NSFW) content is strictly forbidden. This includes but is
+not limited to pornography, gore, graphic violence, hate speech, and content
+that violates the platform's terms of service. All content must be
+appropriate for a professional environment. If you are unsure whether
+something is appropriate, ask a moderator before posting.
+
+5. APPROPRIATE CHANNEL USAGE
+
+Post messages in the most relevant channel for the topic. Check channel
+descriptions and pinned messages before posting. If a conversation drifts
+off-topic, move it to a thread or a more appropriate channel. Moderators may
+move, delete, or reorganize off-topic messages to keep channels organized.
+
+6. USE THREADS FOR EXTENDED DISCUSSIONS
+
+When replying to a specific message with a detailed response, use the "Reply
+in thread" feature. Threads keep the main channel clean while allowing
+conversations to go deep. This helps other members follow multiple
+conversations without getting lost. Threads are also great for off-topic
+tangents that don't need to appear in the main feed.
+
+7. NO ILLEGAL CONTENT
+
+Any content that violates applicable laws or regulations is prohibited. This
+includes sharing copyrighted material without permission, distributing
+malware or hacking tools, discussing or promoting illegal activities, and
+sharing content that violates intellectual property rights. Violations
+result in immediate permanent bans.
+
+8. NO DOXXING OR PRIVACY VIOLATIONS
+
+Do not share anyone's private personal information without their explicit
+consent. This includes real names, home addresses, phone numbers, email
+addresses, workplace information, and family details. Do not share
+screenshots of private conversations without permission. What happens in
+private channels and direct messages stays private unless all participants
+agree to share.
+
+9. SPOILER WARNINGS
+
+When discussing movies, TV shows, games, or books that contain major plot
+points, use spoiler warnings. Give context about what you are spoiling (e.g.,
+"[Spoiler: Final episode ending]") and put the actual spoiler content in a
+thread or behind a spoiler tag. Allow at least one week after release before
+discussing without tags.
+
+10. ENGLISH AS PRIMARY LANGUAGE
+
+The primary language of this server is English. While occasional phrases or
+greetings in other languages are welcome, please use English for all main
+discussions so that moderators can effectively enforce the rules and the
+majority of members can understand. Non-English channels can be created with
+admin approval.
+
+11. RESPECT MODERATOR DECISIONS
+
+Moderators and administrators have the final say on rule interpretation and
+enforcement. If you disagree with a moderation decision, you may appeal
+privately to an administrator via direct message. Public arguments about
+moderation actions or calling out moderators in channels is not allowed.
+Respect the decision and handle appeals through the proper channels.
+
+12. REPORTING VIOLATIONS
+
+If you witness a rule violation, report it rather than engaging. You can:
+- Send a direct message to any moderator or administrator
+- Click the "Flag" option if your workspace has moderation tools enabled
+- Provide screenshots and context to help moderators understand the situation
+
+Do not retaliate, escalate, or attempt to enforce rules yourself. Let
+moderators handle it. False reports or abuse of the reporting system may
+result in action against your account.
+
+13. NO UNAUTHORIZED BOTS OR AUTOMATION
+
+Do not run bots, scripts, or automation tools that interact with the platform
+without admin approval. This includes auto-messaging, content scraping,
+reaction bots, and any automated behavior. If you want to integrate a
+third-party tool, ask an administrator first.
+
+14. ACCOUNT INTEGRITY
+
+- One person, one account. Do not create multiple accounts.
+- Do not impersonate other members, moderators, admins, or staff.
+- Do not share your account credentials with others.
+- Do not use accounts to evade bans or restrictions.
+- If you need a second account for a legitimate reason, request admin approval.
+
+15. LINK AND FILE SHARING
+
+- Only share links to safe, relevant content.
+- No phishing links, malware, or deceptive URLs.
+- No pirated content, cracked software, or copyright-infringing material.
+- If sharing a file, scan it for viruses first.
+- If a link leads to content with flashing lights, loud audio, or other
+  potential accessibility concerns, add a warning before the link.
+
+16. MINIMUM AGE REQUIREMENT
+
+You must be at least 13 years old to use this platform, in compliance with
+the Children's Online Privacy Protection Act (COPPA) and applicable
+international laws. Users found to be under 13 will have their accounts
+terminated.
+
+17. CONSEQUENCES OF RULE VIOLATIONS
+
+Violations are handled on a case-by-case basis depending on severity and
+history:
+
+- FIRST OFFENSE (minor): Verbal or written warning from a moderator
+- REPEATED MINOR OFFENSES: Temporary mute (1-7 days)
+- FIRST OFFENSE (moderate): Temporary mute (1-30 days) or temporary ban
+- SEVERE OFFENSES: Permanent ban without warning
+- BAN EVASION: Permanent ban extended, possible IP/account blacklisting
+
+Moderators document all enforcement actions. You may request a review of
+any action taken against your account by contacting an administrator.
+
+18. CHANGES TO RULES
+
+These rules may be updated at any time. Significant changes will be announced
+in the #announcements channel. Continued use of the platform after changes
+constitutes acceptance of the updated rules. It is your responsibility to
+stay informed of the current community guidelines.

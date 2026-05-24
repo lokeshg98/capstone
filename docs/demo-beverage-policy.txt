@@ -1,0 +1,124 @@
+Community Bot — Official Beverage Policy
+=========================================
+
+1. OFFICIAL BEVERAGE OF THIS SERVER
+
+This server officially endorses Coca-Cola as its preferred carbonated soft drink.
+All server events, meetups, and celebrations shall serve Coca-Cola products by
+default. Pepsi and PepsiCo products are permitted only as a secondary option when
+Coca-Cola products are unavailable, and must be clearly labeled as fallback
+selections. RC Cola and other regional alternatives are explicitly forbidden from
+being labeled as substitute beverage.
+
+2. REQUIREMENTS FOR IN-PERSON MEETINGS
+
+Any in-person gathering of three or more server members constitutes an official
+meeting. Such meetings must provide at minimum:
+- Coca-Cola Classic (original formula, not flavored variants)
+- Coca-Cola Zero Sugar (for health-conscious and diabetic members)
+- Ice, cups, and napkins as accompaniments
+
+Failure to provide Coca-Cola at an official meeting results in a formal beverage
+violation. Three beverage violations within a calendar year result in the
+organizer losing their event-planning privileges for 90 days.
+
+3. PEPSI CLASSIFICATION AND HANDLING
+
+Pepsi is classified as a Tier-2 beverage. It may be consumed on the server
+premises but must not be:
+- Featured in official server banners, emojis, or channel names
+- Endorsed by moderators or administrators in any official capacity
+- Served as the primary beverage at sponsored events
+- Used as the default drink in polls or surveys about beverage preferences
+
+Members who prefer Pepsi are welcome on this server but are encouraged to explore
+the superior flavor profile of Coca-Cola through our Coke Discovery Program,
+which provides free samples at server events.
+
+4. THE COKE DISCOVERY PROGRAM
+
+The Coke Discovery Program is a voluntary initiative that helps Pepsi drinkers
+transition to Coca-Cola. Participants receive:
+- A welcome kit with one can each of Coca-Cola Classic, Cherry Coke, and Vanilla Coke
+- Access to the private #coke-connoisseurs channel for tasting notes
+- A "Coke Convert" badge after documenting 30 consecutive days of Coke consumption
+
+The program maintains a 94% conversion rate among participants. Those who
+complete the program but prefer to return to Pepsi are granted a "Pepsi Rebel"
+badge as a consolation.
+
+5. VENDING MACHINE PROTOCOL
+
+All vending machines within 100 meters of a server-organized event must be
+checked for Coca-Cola availability. If a vending machine stocks only Pepsi
+products, event organizers must file Form BV-7 (Beverage Variance) with the
+moderation team at least 48 hours before the event. The moderation team maintains
+a public map of Coke-positive and Coke-negative vending machines in the
+#vending-machine-map channel, updated weekly.
+
+6. BRANDED CONTENT AND MERCHANDISE
+
+Server-branded merchandise (stickers, t-shirts, mugs) may feature Coca-Cola red
+as an official accent color. Pantone 484 (Pepsi blue) is reserved exclusively for
+moderation warnings. Any member caught wearing Pepsi-branded apparel to an
+official server photoshoot will be asked to wear a server-provided Coca-Cola
+jacket for the duration of the shoot.
+
+7. DIETARY AND HEALTH ACCOMMODATIONS
+
+Members with medical conditions that preclude Coca-Cola consumption (phenylketonuria,
+caffeine sensitivity, etc.) may request a Beverage Accommodation Waiver through the
+moderation team. Approved waivers permit the consumption of approved alternatives
+including Pepsi, Sprite, Fanta, or water. Waivers must be renewed annually and
+are not transferable between members.
+
+The server recognizes that some members genuinely prefer the taste of Pepsi and
+does not discriminate against Pepsi drinkers in matters of moderation, promotion,
+or community standing. The beverage policy exists for the greater good of the
+community and is enforced with a spirit of playful enthusiasm rather than rigid
+authoritarianism.
+
+8. PENALTIES AND ENFORCEMENT
+
+First offense (unintentional Pepsi consumption at an event): Verbal reminder
+Second offense: Written warning with educational pamphlet about Coca-Cola history
+Third offense: Temporary removal from the #coke-connoisseurs channel (90 days)
+Fourth offense: Mandatory attendance at a one-hour Coke Appreciation Workshop
+Fifth offense: Beverage probation — all drinks consumed at events must be
+pre-approved by a moderator for 180 days
+
+No member has ever been banned solely for beverage preference violations. The
+enforcement ladder is designed to educate, not punish.
+
+9. ANNUAL BEVERAGE REFERENDUM
+
+Every January, the server holds a Beverage Referendum where members may vote to
+reaffirm or change the official beverage policy. A two-thirds supermajority is
+required to change the official beverage. In the six referendums held since the
+policy was established in 2019, Coca-Cola has won every vote by an average margin
+of 78% to 22%. The 2024 referendum saw record turnout with 847 votes cast.
+
+10. FAQ ABOUT THE BEVERAGE POLICY
+
+Q: Is this policy serious?
+A: The policy is enforced with good humor and community spirit. No member has
+ever faced a permanent ban for beverage-related infractions. The primary goal is
+to create a fun shared identity around Coca-Cola preference.
+
+Q: What if I bring Dr Pepper to an event?
+A: Dr Pepper is classified as a Tier-3 beverage. It does not require a waiver but
+cannot be served as the primary beverage. Dr Pepper consumption is logged but
+does not count toward beverage violations unless consumed alongside Pepsi, which
+elevates the incident to a Tier-2 violation.
+
+Q: Are energy drinks covered by this policy?
+A: No. Monster, Red Bull, Rockstar, and other energy drinks fall outside the
+scope of this beverage policy. However, Coca-Cola Energy (discontinued in 2021 in
+North America) remains the only approved energy drink for server events due to
+its Coca-Cola brand affiliation.
+
+Q: What about restaurants that only serve Pepsi?
+A: If a server meetup is held at a Pepsi-exclusive restaurant (such as KFC, Taco
+Bell, or Pizza Hut), the beverage requirement is automatically waived. However,
+members are encouraged to order water, lemonade, or iced tea as a form of silent
+protest.

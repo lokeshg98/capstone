@@ -40,9 +40,12 @@ public class ChunkingService {
                 chunks.add(chunk);
             }
 
+            if (end >= text.length()) {
+                break;
+            }
+
             // Move forward, stepping back by the overlap amount
             start = end - OVERLAP;
-            if (start < 0 || start >= text.length()) break;
         }
 
         return chunks;

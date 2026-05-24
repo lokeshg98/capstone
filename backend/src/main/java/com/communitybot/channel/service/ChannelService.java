@@ -97,6 +97,7 @@ public class ChannelService {
         channelMemberRepository.save(
                 ChannelMember.builder().channel(general).user(creator).build()
         );
+        ensureBotInChannel(general.getId());
         return general;
     }
 
@@ -195,6 +196,16 @@ public class ChannelService {
         if (!channelMemberRepository.existsByChannelIdAndUserId(channelId, userId)) {
             throw new AppException(ErrorCode.CHANNEL_ACCESS_DENIED);
         }
+    }
+
+    /** Ensures the bot user is a member of the given channel (idempotent). */
+    @Transactional
+    public void ensureBotInChannel(UUID channelId) {
+        User bot = userRepository.findByEmail(BotUserInitializer.BOT_EMAIL).orElse(null);
+        if (bot == null) return;
+        if (channelMemberRepository.existsByChannelIdAndUserId(channelId, bot.getId())) return;
+        Channel channel = getOrThrow(channelId);
+        channelMemberRepository.save(ChannelMember.builder().channel(channel).user(bot).build());
     }
 
     // -------------------------------------------------------------------------

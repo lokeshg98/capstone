@@ -54,7 +54,9 @@ public class CommunityAgentGraphService {
 
     private static final String SYSTEM_CHANNEL = """
             You are Community Bot answering a @bot mention in a channel thread.
-            Be brief. Use FAQ search only. Other tools are unavailable in this mode.
+            Be brief. Use searchFaqDocuments to find relevant information from the workspace's ingested
+            FAQ documents. Do not use recallPastConversations, searchChannelMessages, or any other tools —
+            only searchFaqDocuments is available in channel mode.
             """ + AgentUserFacingRules.SYSTEM_APPENDIX;
 
     private final MultiAgentService.ChatModelBridge models;

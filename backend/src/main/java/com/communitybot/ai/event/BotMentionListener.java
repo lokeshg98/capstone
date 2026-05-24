@@ -4,6 +4,7 @@ import com.communitybot.ai.agent.MultiAgentService;
 import com.communitybot.ai.service.BotUserInitializer;
 import com.communitybot.auth.domain.User;
 import com.communitybot.auth.repository.UserRepository;
+import com.communitybot.channel.service.ChannelService;
 import com.communitybot.message.dto.MessageResponse;
 import com.communitybot.message.service.MessageService;
 import com.communitybot.realtime.dto.WsOutboundEvent;
@@ -24,17 +25,19 @@ import java.util.regex.Pattern;
 public class BotMentionListener {
 
     private static final Pattern MENTION_PATTERN = Pattern.compile(
-            "(?i)@bot\\b|@" + Pattern.quote(normalizeName(BotUserInitializer.BOT_DISPLAY_NAME)) + "\\p{So}*\\b"
+            "(?i)@bot\\b|@" + Pattern.quote(normalizeName(BotUserInitializer.BOT_DISPLAY_NAME)) + "[\\p{So}]*\\s*"
     );
 
     private final MultiAgentService   multiAgentService;
     private final MessageService     messageService;
     private final UserRepository     userRepository;
     private final RealtimePublisher  realtimePublisher;
+    private final ChannelService     channelService;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageSent(MessageSentEvent event) {
+        log.debug("BotMentionListener triggered: body='{}' threadRootId={}", event.body(), event.threadRootId());
         if (!MENTION_PATTERN.matcher(event.body()).find()) return;
 
         UUID botId = userRepository.findByEmail(BotUserInitializer.BOT_EMAIL)
@@ -55,6 +58,8 @@ public class BotMentionListener {
                         .orElseThrow(() -> new IllegalStateException("Bot user not found"))
                         .getId();
             }
+
+            channelService.ensureBotInChannel(event.channelId());
 
             MessageResponse botReply = messageService.send(
                     event.channelId(),

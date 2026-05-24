@@ -5,6 +5,7 @@ import com.communitybot.message.domain.MessageStatus;
 import com.communitybot.message.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -15,9 +16,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ThreadTranscriptBuilder {
 
-    private static final List<MessageStatus> VISIBLE = List.of(
-            MessageStatus.ACTIVE,
-            MessageStatus.EDITED,
+    private static final List<MessageStatus> EXCLUDED = List.of(
+            MessageStatus.DELETED,
+            MessageStatus.HIDDEN,
             MessageStatus.FLAGGED
     );
 
@@ -28,12 +29,13 @@ public class ThreadTranscriptBuilder {
 
     public record Transcript(UUID rootId, UUID channelId, UUID workspaceId, String text, int messageCount) {}
 
+    @Transactional(readOnly = true)
     public Transcript build(UUID threadRootId) {
         Message root = messageRepository.findById(threadRootId).orElse(null);
         if (root == null) {
             return null;
         }
-        List<Message> replies = messageRepository.findThreadReplies(threadRootId, VISIBLE);
+        List<Message> replies = messageRepository.findThreadReplies(threadRootId, EXCLUDED);
         StringBuilder sb = new StringBuilder();
         appendLine(sb, root);
         for (Message reply : replies) {

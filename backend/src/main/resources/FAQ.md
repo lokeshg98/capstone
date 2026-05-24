@@ -1,6 +1,70 @@
-# Community Bot — FAQ
+# Community Bot — FAQ & Community Rules
 
-Answers to the most common questions about using the platform.
+Answers to common questions about the platform and our community guidelines.
+
+---
+
+## Community Rules
+
+**Q: What are the community rules?**
+Be respectful, stay on topic, no spam, no harassment, no NSFW content, and follow moderator instructions. Use common sense — if you wouldn't say it in a professional meeting, don't say it here.
+
+**Q: What is the rule about being respectful?**
+Treat others with kindness and professionalism. No personal attacks, insults, name-calling, trolling, or aggressive behavior. Disagreements are fine, but keep them constructive and focused on ideas, not people.
+
+**Q: Is harassment allowed?**
+No. Harassment of any kind is strictly prohibited. This includes but is not limited to bullying, intimidation, stalking, repeated unwanted contact, sexual harassment, and making threats. Violations result in immediate moderation action.
+
+**Q: What is the rule about spam and self-promotion?**
+No spamming or excessive self-promotion. Do not post the same message across multiple channels, send unsolicited DMs, or promote your products, services, or social media without admin approval. Occasional sharing of relevant resources in #resources is fine.
+
+**Q: What content is not allowed?**
+NSFW (not safe for work) content is strictly prohibited. This includes pornography, gore, hate speech, violent extremism, and any content that violates the platform's terms of service or applicable laws. Keep all content appropriate for a professional environment.
+
+**Q: What is the rule about illegal content?**
+Any content that violates laws or regulations is forbidden. This includes sharing copyrighted material without permission, doxxing, sharing personal information without consent, discussing illegal activities, or distributing malware. Violations result in permanent bans.
+
+**Q: What is doxxing and is it allowed?**
+Doxxing is sharing someone's private personal information (real name, address, phone number, workplace, etc.) without their consent. Doxxing is strictly prohibited and results in an immediate permanent ban.
+
+**Q: Should I use the right channels for topics?**
+Yes. Post in the most relevant channel for your topic. If you're unsure which channel to use, ask in #general. If a conversation drifts off-topic, move it to a thread or a more appropriate channel. Moderators may move or remove off-topic messages.
+
+**Q: When should I use threads?**
+Use threads for extended replies, off-topic tangents, or detailed discussions that would clutter the main channel. Click "Reply in thread" on a message to start one. Threads keep the main channel clean while letting conversations go deep.
+
+**Q: What is the rule about spoilers and sensitive content?**
+Use spoiler warnings for content that might spoil movies, games, books, or TV shows. If sharing potentially sensitive or triggering content, give a content warning first and put the content behind a thread or spoiler tag.
+
+**Q: What language should I use?**
+The primary language of this server is English. While occasional phrases in other languages are fine, please use English for main discussions so that moderators and most members can understand and participate.
+
+**Q: What happens if I break a rule?**
+Moderators may issue a warning, delete the offending message, temporarily mute you, or ban you from the server depending on the severity and frequency of the violation. First-time minor violations typically get a warning. Repeated or severe violations lead to bans.
+
+**Q: How do I report a rule violation?**
+If you see someone breaking the rules, you can report it to a moderator or admin via direct message. Alternatively, use the "Report" button (flag icon) if your workspace has moderation features enabled. Do not engage or escalate the situation yourself.
+
+**Q: Do moderators have final say?**
+Yes. Moderators and admins have the final say on rule enforcement and content decisions. If you disagree with a moderation action, you can appeal it privately with an admin. Public arguments about moderation are not allowed.
+
+**Q: What is the rule about privacy?**
+Respect other members' privacy. Do not share screenshots of private conversations without consent. Do not collect or store other members' personal information. What happens in private channels stays in private channels.
+
+**Q: Can I DM other members without permission?**
+Avoid sending unsolicited direct messages. If you need to reach someone privately, ask in a public channel first if it's okay to DM them. Repeated unwanted DMs may be considered harassment.
+
+**Q: What about bots and automation?**
+Do not run unauthorized bots, scripts, or automation tools that post messages, scrape content, or interact with the platform in ways that disrupt normal use. Ask an admin before connecting any third-party bot or integration.
+
+**Q: Can I share links and external content?**
+Yes, but ensure the content is safe and relevant. Do not share phishing links, malware, pirated content, or referral/affiliate links. If a link requires a content warning (e.g., flashing lights, loud audio), add a note before the link.
+
+**Q: Is there a minimum age requirement?**
+You must be at least 13 years old to use this platform, in compliance with the Children's Online Privacy Protection Act (COPPA) and the platform's terms of service.
+
+**Q: Can I have multiple accounts?**
+Using multiple accounts to evade bans, impersonate others, or manipulate discussions is not allowed. One person should use one account. If you need a second account for a legitimate reason, ask an admin first.
 
 ---
 
@@ -54,7 +118,7 @@ The bot supports a **multi-agent** assistant in **Ask Bot** (sidebar): it can se
 Click **Ask Bot** at the bottom of the left sidebar. A full-page chat opens. Type your question and press `Enter` (or click send). Replies **stream** in real time; you will see **tool steps** (collapsed by default), **source excerpts** from documents when RAG is used, and a **confirmation card** if the bot proposes scheduling a post.
 
 **Q: How do I teach the bot new information?**
-In the **Ask Bot** panel, scroll to the **FAQ Documents** section at the bottom (click to expand). Click **Upload FAQ document** and select a PDF or DOCX file. The platform uploads the file, chunks it, and embeds it automatically. Once ingested, the bot can answer questions from it immediately.
+In the **Ask Bot** panel, scroll to the **FAQ Documents** section at the bottom (click to expand). Click **Upload FAQ document** and select a PDF, DOCX, TXT, or MD file. The platform uploads the file, chunks it, and embeds it automatically. Once ingested, the bot can answer questions from it immediately.
 
 **Q: The bot offered to schedule a post. What should I do?**
 If the assistant proposes a **scheduled post**, a yellow **Confirm / Decline** card appears under the reply. Nothing is written to the schedule until you click **Confirm**. **Decline** discards the proposal.
@@ -63,19 +127,19 @@ If the assistant proposes a **scheduled post**, a yellow **Confirm / Decline** c
 Web search is available to **workspace admins** when your organisation has enabled it. If you need live web results in Ask Bot, ask a workspace admin.
 
 **Q: What file types does the bot accept for its knowledge base?**
-PDF (`.pdf`) and Word documents (`.docx`) only.
+PDF (`.pdf`), Word documents (`.docx`), plain text (`.txt`), and Markdown (`.md`).
 
 **Q: How do I trigger the bot from a channel?**
-Type `@bot` anywhere in your message, e.g.:
+Type `@bot` or `@Community Bot` anywhere in your message, for example:
 
 ```
-@bot what is our refund policy?
+@bot what is the rule about spam?
 ```
 
-The bot reads the question, searches the FAQ knowledge base (and limited tools in quick-reply mode), and posts its answer directly in the channel.
+The bot reads the question, searches the FAQ knowledge base (and limited tools in quick-reply mode), and posts its answer directly in the channel as a thread reply.
 
 **Q: The bot answered "I don't know" or gave a vague response. Why?**
-FAQ answers depend on **uploaded documents**. In the full **Ask Bot** panel the assistant can also search **channels** and other sources when it chooses the right tools; if nothing matches, it may still say it does not know. Upload the relevant PDF or DOCX to improve document coverage.
+FAQ answers depend on **uploaded documents**. In the full **Ask Bot** panel the assistant can also search **channels** and other sources when it chooses the right tools; if nothing matches, it may still say it does not know. Upload the relevant PDF, DOCX, TXT, or MD file to improve document coverage.
 
 **Q: The bot returned an error. What should I do?**
 Try again in a moment. If the problem continues, contact your workspace admin — the assistant may be temporarily unavailable.

@@ -84,6 +84,7 @@ fun loadInfraDotEnv(): Map<String, String> {
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs = listOf("-Xmx512m", "-Xms128m")
     val dotenv = loadInfraDotEnv()
     dotenv.forEach { (key, value) -> environment(key, value) }
     val profile = System.getenv("SPRING_PROFILES_ACTIVE") ?: dotenv["SPRING_PROFILES_ACTIVE"]
