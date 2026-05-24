@@ -32,14 +32,21 @@ public class LongTermMemoryService {
      * (2) semantically similar past turns across the workspace for this user.
      */
     public String formatRecallForPrompt(UUID workspaceId, UUID userId, UUID conversationId, String questionText) {
-        float[]  emb = embeddingClient.embed(questionText);
-        String vec = DocumentIngestionService.floatArrayToVectorString(emb);
+        float[] emb = null;
+        try {
+            emb = embeddingClient.embed(questionText);
+        } catch (Exception e) {
+            log.warn("Semantic memory recall skipped: {}", e.getMessage());
+        }
 
         List<MemoryHit> hits = new ArrayList<>();
         if (conversationId != null) {
             hits.addAll(recentInConversation(workspaceId, userId, conversationId, 8));
         }
-        hits.addAll(semanticSearch(workspaceId, userId, vec, 5));
+        if (emb != null) {
+            String vec = DocumentIngestionService.floatArrayToVectorString(emb);
+            hits.addAll(semanticSearch(workspaceId, userId, vec, 5));
+        }
 
         if (hits.isEmpty()) {
             return "";
@@ -94,17 +101,21 @@ public class LongTermMemoryService {
 
     private void indexTurn(UUID workspaceId, UUID userId, UUID conversationId,
                            String role, String content) {
-        float[] emb = embeddingClient.embed(content);
-        String vec  = DocumentIngestionService.floatArrayToVectorString(emb);
-        UUID id     = UUID.randomUUID();
+        try {
+            float[] emb = embeddingClient.embed(content);
+            String vec  = DocumentIngestionService.floatArrayToVectorString(emb);
+            UUID id     = UUID.randomUUID();
 
-        jdbcTemplate.update(
-                """
-                INSERT INTO agent_memories (id, workspace_id, user_id, conversation_id, kind, role, content, embedding)
-                VALUES (?, ?, ?, ?, 'ASK_TURN', ?, ?, ?::vector)
-                """,
-                id, workspaceId, userId, conversationId, role, truncate(content, 2000), vec
-        );
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO agent_memories (id, workspace_id, user_id, conversation_id, kind, role, content, embedding)
+                    VALUES (?, ?, ?, ?, 'ASK_TURN', ?, ?, ?::vector)
+                    """,
+                    id, workspaceId, userId, conversationId, role, truncate(content, 2000), vec
+            );
+        } catch (Exception e) {
+            log.warn("Failed to store Ask Bot memory turn: {}", e.getMessage());
+        }
     }
 
     private List<MemoryHit> recentInConversation(UUID workspaceId, UUID userId,

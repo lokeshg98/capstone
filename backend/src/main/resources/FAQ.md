@@ -26,13 +26,19 @@ Inside a workspace, look at the left sidebar under **Channels**. Click the **+**
 Click a channel in the sidebar, type in the message box at the bottom, and press `Enter` (or click the send button). Hold `Shift + Enter` to add a line break without sending.
 
 **Q: Can I attach files to messages?**
-Yes. Click the paperclip / attachment icon in the message input bar to upload a file. Supported formats include images, PDFs, and DOCX files. Files are stored securely in the backend object store (MinIO).
+Yes. Click the attachment icon in the message input bar to upload a file. Supported formats include images, PDFs, Word documents, plain text, and Markdown. Files are scanned and stored securely.
 
 **Q: Are messages delivered in real time?**
-Yes. The platform uses WebSockets. Any message sent by one member appears instantly in the channel for all connected members — no page refresh needed.
+Yes. Messages appear instantly in the channel for all connected members — no page refresh needed.
 
 **Q: Can I react to messages?**
-Yes. Hover over a message to reveal the emoji reaction option. Reactions are counted and displayed inline below the message. Your own reactions are highlighted.
+Yes. Hover over a message and click the smile icon to open the emoji picker. Search by keyword (e.g. "happy") and add a reaction. Reactions are counted and shown below the message.
+
+**Q: Does the app support Giphy or animated GIF stickers?**
+No. Giphy and third-party GIF libraries are not integrated. Use the built-in emoji picker for Unicode emoji and searchable emoji images when composing messages or adding reactions.
+
+**Q: Does the app support vacation mode or away status?**
+No. Vacation mode, out-of-office messages, and custom away status are not available. You can see who is currently online in the member list, but there is no setting to pause notifications or mark yourself away while on leave.
 
 **Q: I see "This message was deleted." — what happened?**
 The message was removed by a moderator or admin due to a content policy violation. The placeholder is intentional so that conversation threads remain readable.
@@ -42,7 +48,7 @@ The message was removed by a moderator or admin due to a content policy violatio
 ## Community Bot (AI Assistant)
 
 **Q: What can the bot do?**
-The bot supports a **multi-agent** assistant in **Ask Bot** (sidebar): it can search **FAQ documents**, recall **long-term memories** from your past Ask Bot Q&A in this workspace, search **channel messages** (keyword and semantic), **summarize threads**, run **web search** when enabled (Tavily; typically **admins only**), inspect **moderation** stats and queues (moderators), and **propose scheduled posts** that only apply after you **confirm** them in the UI. **In-channel** replies via `@bot` are intentionally shorter and only use FAQ-style tools.
+The bot supports a **multi-agent** assistant in **Ask Bot** (sidebar): it can search **FAQ documents**, recall **past conversations** from earlier Ask Bot chats in this workspace, search **channel messages** (keyword and semantic), **summarize threads**, run **web search** when enabled (typically **admins only**), inspect **moderation** stats and queues (moderators), and **propose scheduled posts** that only apply after you **confirm** them in the UI. **In-channel** replies via `@bot` are intentionally shorter and only use FAQ-style tools.
 
 **Q: How do I ask the bot a question?**
 Click **Ask Bot** at the bottom of the left sidebar. A full-page chat opens. Type your question and press `Enter` (or click send). Replies **stream** in real time; you will see **tool steps** (collapsed by default), **source excerpts** from documents when RAG is used, and a **confirmation card** if the bot proposes scheduling a post.
@@ -54,7 +60,7 @@ In the **Ask Bot** panel, scroll to the **FAQ Documents** section at the bottom 
 If the assistant proposes a **scheduled post**, a yellow **Confirm / Decline** card appears under the reply. Nothing is written to the schedule until you click **Confirm**. **Decline** discards the proposal.
 
 **Q: How do I enable web search in Ask Bot?**
-Set `TAVILY_API_KEY` in `infra/.env` (see [RUNBOOK.md](./RUNBOOK.md)). By default, only **workspace admins** can use web search tools. Without the key, web search is disabled and the bot explains that when relevant.
+Web search is available to **workspace admins** when your organisation has enabled it. If you need live web results in Ask Bot, ask a workspace admin.
 
 **Q: What file types does the bot accept for its knowledge base?**
 PDF (`.pdf`) and Word documents (`.docx`) only.
@@ -72,22 +78,17 @@ The bot reads the question, searches the FAQ knowledge base (and limited tools i
 FAQ answers depend on **uploaded documents**. In the full **Ask Bot** panel the assistant can also search **channels** and other sources when it chooses the right tools; if nothing matches, it may still say it does not know. Upload the relevant PDF or DOCX to improve document coverage.
 
 **Q: The bot returned an error. What should I do?**
-Ensure the backend is running and that `OPENAI_API_KEY` is set in `infra/.env` and exported before starting the backend. Without a valid OpenAI key, RAG queries will fail with a 500 error.
+Try again in a moment. If the problem continues, contact your workspace admin — the assistant may be temporarily unavailable.
 
 ---
 
 ## Moderation
 
 **Q: How does automatic moderation work?**
-When `MODERATION_ENABLED=true`, every message is analysed by the AI moderation pipeline before delivery. Messages classified as inappropriate (profanity, spam, harassment) are automatically flagged and hidden from the channel. Moderators and admins review the queue and decide to approve or permanently remove flagged messages.
+When moderation is enabled, every message is analysed by the AI moderation pipeline before delivery. Messages classified as inappropriate (profanity, spam, harassment) are automatically flagged and hidden from the channel. Moderators and admins review the queue and decide to approve or permanently remove flagged messages.
 
-**Q: Moderation is disabled in my environment. Is that normal?**
-Yes. The dev profile disables AI moderation by default to avoid unnecessary OpenAI API calls during local development. To enable it, set `MODERATION_ENABLED=true` before starting the backend:
-
-```bash
-export MODERATION_ENABLED=true
-./gradlew :backend:bootRun --args='--spring.profiles.active=dev'
-```
+**Q: I don't see any flagged messages. Is moderation on?**
+Moderation is controlled by your workspace administrators. If you expect automatic flagging but don't see it, ask an admin to confirm moderation is enabled for your workspace.
 
 **Q: How do I review flagged messages?**
 Click **Moderation** at the bottom of the left sidebar (requires Moderator or Admin role). You will see a queue of flagged messages. For each one:
@@ -143,22 +144,19 @@ Feel free to introduce yourself and ask any questions in this channel.
 ## Troubleshooting
 
 **Q: I click an organisation but nothing happens.**
-The app auto-creates a **General** workspace on first click. If nothing happens, the backend may be down or returning an error. Check that:
-- Docker services are running: `docker compose ps` (all should show `healthy`)
-- The Spring Boot backend is running on port 8080
-- Your browser console shows any network errors (F12 → Network tab)
+The app auto-creates a **General** workspace on first click. If nothing happens, the service may be temporarily unavailable. Check your browser console (F12 → Network) for errors.
 
 **Q: I get redirected to `/login` every time.**
-Your session has expired or you were not fully authenticated. Sign in again. Ensure the backend is running — if it is down, the token refresh call will fail and the frontend will clear your session.
+Your session has expired or sign-in did not complete. Sign in again from the home page.
 
 **Q: The frontend shows a blank white screen.**
-A CORS mismatch is the most common cause. Confirm `FRONTEND_URL=http://localhost:3000` is in `infra/.env` and was exported before starting the backend.
+Make sure you are opening the app at `http://localhost:3000` and that the server is running. Check your browser console (F12 → Network) for failed requests.
 
 **Q: Messages I send don't appear for other users without a refresh.**
-The WebSocket connection to `ws://localhost:8080/ws` may have failed. Check the browser console for WebSocket errors. Ensure the backend is running and that no firewall or proxy is blocking the WebSocket upgrade.
+Real-time delivery may be interrupted. Refresh the page and try again. If the problem persists, contact your workspace admin.
 
 **Q: File uploads fail.**
-Ensure MinIO is running and the `community-bot` bucket exists. See Step 3 of the RUNBOOK for bucket creation instructions.
+Check that the file is under the size limit and is a supported type (image, PDF, Word, text, or Markdown). If it still fails, contact your workspace admin.
 
 ---
 

@@ -5,6 +5,7 @@ import com.communitybot.ai.agent.AgentContextHolder;
 import com.communitybot.ai.agent.AgentRunState;
 import com.communitybot.ai.agent.AgentRunStateHolder;
 import com.communitybot.ai.agent.CommunityAgentGraphService;
+import com.communitybot.ai.agent.UserFacingResponseSanitizer;
 import com.communitybot.publicsite.dto.*;
 import com.communitybot.publicsite.service.NewsletterService;
 import com.communitybot.publicsite.service.PublicFaqService;
@@ -26,6 +27,7 @@ public class PublicController {
     private final PublicFaqService            publicFaqService;
     private final NewsletterService           newsletterService;
     private final CommunityAgentGraphService  agentGraphService;
+    private final UserFacingResponseSanitizer responseSanitizer;
 
     @GetMapping("/platform")
     public ResponseEntity<ApiResponse<PlatformInfoResponse>> platform() {
@@ -40,7 +42,7 @@ public class PublicController {
                 List.of(
                         new PlatformInfoResponse.FeatureCard(
                                 "Real-time chat",
-                                "Channels, threads, reactions, and file attachments with WebSocket delivery.",
+                                "Channels, threads, reactions, and file attachments with real-time delivery.",
                                 "messages"
                         ),
                         new PlatformInfoResponse.FeatureCard(
@@ -97,11 +99,22 @@ public class PublicController {
         AgentRunStateHolder.init();
         AgentContextHolder.set(AgentContext.publicAsk());
         try {
-            String answer = agentGraphService.runSync(req.question(), sessionId);
-            AgentRunState st = AgentRunStateHolder.get();
-            List<String> steps = st == null ? List.of()
-                    : st.steps().stream().map(s -> s.kind() + ": " + s.detail()).toList();
-            return ResponseEntity.ok(ApiResponse.ok(new PublicAskResponse(answer, steps)));
+            String answer;
+            List<String> steps;
+            try {
+                answer = agentGraphService.runSync(req.question(), sessionId);
+                AgentRunState st = AgentRunStateHolder.get();
+                steps = st == null ? List.of()
+                        : st.steps().stream().map(s -> s.kind() + ": " + s.detail()).toList();
+            } catch (Exception agentErr) {
+                answer = publicFaqService.answerForUser(req.question());
+                var best = publicFaqService.findBestMatch(req.question());
+                steps = best != null
+                        ? List.of("public_faq: " + best.question())
+                        : List.of("public_faq: no strong match");
+            }
+            return ResponseEntity.ok(ApiResponse.ok(
+                    new PublicAskResponse(responseSanitizer.sanitize(answer), steps)));
         } finally {
             AgentContextHolder.clear();
             AgentRunStateHolder.clear();

@@ -150,7 +150,7 @@
         const res = await api('/agent/ask', { method: 'POST', body: JSON.stringify({ question: q }) });
         box.textContent = res.answer;
       } catch (e) {
-        box.textContent = 'Demo bot unavailable. Restart the backend.';
+        box.textContent = 'Sorry, the demo bot could not answer right now. Check that the backend is running and OPENAI_API_KEY is set in infra/.env.';
       }
     };
 

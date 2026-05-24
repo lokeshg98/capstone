@@ -246,7 +246,7 @@ public class CommunityAgentTools {
         }
         WebSearchEngine engine = webSearchOrNull();
         if (engine == null) {
-            return "Web search is not configured (set app.agent.tavily-api-key / TAVILY_API_KEY).";
+            return "Web search is not enabled for this workspace. Ask a workspace admin if you need live web results.";
         }
         if (agentProperties.isWebSearchAdminOnly()) {
             WorkspaceMember member = workspaceMemberRepository

@@ -4,6 +4,7 @@ import com.communitybot.ai.config.AgentProperties;
 import com.communitybot.ai.dto.AskCitation;
 import com.communitybot.ai.dto.AskStep;
 import com.communitybot.workspace.service.WorkspaceService;
+import com.communitybot.publicsite.service.PublicFaqService;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -31,8 +32,10 @@ public class MultiAgentService {
     private final LongTermMemoryService longTermMemoryService;
     private final WorkspaceService      workspaceService;
     private final AgentRateLimiter      agentRateLimiter;
-    private final AgentMetrics          agentMetrics;
-    private final CommunityAgentGraphService graphService;
+    private final AgentMetrics                  agentMetrics;
+    private final CommunityAgentGraphService    graphService;
+    private final UserFacingResponseSanitizer responseSanitizer;
+    private final PublicFaqService              publicFaqService;
 
     @Component
     @RequiredArgsConstructor
@@ -127,7 +130,17 @@ public class MultiAgentService {
                 }
             }
 
-            String answer = graphService.runSync(composed, memId);
+            String answer;
+            try {
+                answer = graphService.runSync(composed, memId);
+            } catch (Exception agentErr) {
+                log.warn("Ask Bot agent failed, using FAQ fallback: {}", agentErr.getMessage());
+                answer = faqFallbackAnswer(question);
+                AgentRunState st = AgentRunStateHolder.get();
+                if (st != null) {
+                    st.addStep("faq_fallback", "Agent unavailable — matched platform FAQ");
+                }
+            }
 
             AgentRunState st = AgentRunStateHolder.get();
             List<AskCitation> citations = List.of();
@@ -147,7 +160,8 @@ public class MultiAgentService {
                 longTermMemoryService.rememberExchange(workspaceId, userId, convId, question, answer);
             }
             agentMetrics.recordCompletion();
-            return new AgentAnswer(answer == null ? "" : answer, n, citations, steps);
+            String safe = responseSanitizer.sanitize(answer == null ? "" : answer);
+            return new AgentAnswer(safe, n, citations, steps);
         } finally {
             AgentContextHolder.clear();
             AgentRunStateHolder.clear();
@@ -214,7 +228,8 @@ public class MultiAgentService {
                     })
                     .onCompleteResponse(resp -> {
                         try {
-                            String text = resp.aiMessage() != null ? resp.aiMessage().text() : tokenAcc.toString();
+                            String text = responseSanitizer.sanitize(
+                                    resp.aiMessage() != null ? resp.aiMessage().text() : tokenAcc.toString());
                             AgentRunState st = AgentRunStateHolder.get();
                             List<AgentStreamEvent.CitationPayload> cits =
                                     st != null ? st.citations() : List.of();
@@ -246,12 +261,13 @@ public class MultiAgentService {
                     .onError(err -> {
                         try {
                             log.warn("Agent stream failed: {}", err.getMessage());
+                            String fallback = faqFallbackAnswer(question);
                             sink.accept(AgentStreamEvent.done(new AgentStreamEvent.AgentAnswerPayload(
-                                    "Sorry, I could not complete that request. "
-                                            + "Check that OPENAI_API_KEY is set and the backend logs for details.",
+                                    responseSanitizer.sanitize(fallback),
                                     0,
                                     List.of(),
-                                    List.of(),
+                                    List.of(new AgentStreamEvent.StepPayload(
+                                            "faq_fallback", "Agent unavailable — matched platform FAQ")),
                                     null
                             )));
                             emitter.complete();
@@ -268,10 +284,15 @@ public class MultiAgentService {
             AgentContextHolder.clear();
             AgentRunStateHolder.clear();
             try {
+                log.warn("Ask Bot stream setup failed: {}", e.getMessage());
+                String fallback = faqFallbackAnswer(question);
                 emitter.send(SseEmitter.event().name("agent").data(
                         AgentStreamEvent.done(new AgentStreamEvent.AgentAnswerPayload(
-                                "Sorry, the assistant encountered an error: " + e.getMessage(),
-                                0, List.of(), List.of(), null
+                                responseSanitizer.sanitize(fallback),
+                                0, List.of(),
+                                List.of(new AgentStreamEvent.StepPayload(
+                                        "faq_fallback", "Agent unavailable — matched platform FAQ")),
+                                null
                         )),
                         MediaType.APPLICATION_JSON));
                 emitter.complete();
@@ -279,6 +300,10 @@ public class MultiAgentService {
                 emitter.completeWithError(e);
             }
         }
+    }
+
+    private String faqFallbackAnswer(String question) {
+        return publicFaqService.answerForUser(question);
     }
 
     private static String trunc(String s, int max) {

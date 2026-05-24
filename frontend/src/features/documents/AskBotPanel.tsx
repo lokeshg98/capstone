@@ -229,7 +229,7 @@ export default function AskBotPanel({ workspaceId }: Props) {
         </div>
         <div>
           <p className="font-semibold text-gray-900 text-sm leading-tight">Community Bot</p>
-          <p className="text-xs text-gray-400">FAQ RAG · pgvector conversation memory · channels · moderation</p>
+          <p className="text-xs text-gray-400">FAQ search · conversation memory · channels · moderation</p>
         </div>
       </div>
 
@@ -239,8 +239,8 @@ export default function AskBotPanel({ workspaceId }: Props) {
             <Bot className="mx-auto h-12 w-12 mb-3 opacity-20" />
             <p className="text-sm font-medium">Ask anything about your community</p>
             <p className="text-xs mt-1 max-w-md mx-auto">
-              Each turn is embedded into pgvector. Similar past questions and answers from this session and
-              earlier Ask Bot chats are retrieved automatically before the bot replies.
+              Similar past questions and answers from this session and earlier Ask Bot chats are
+              retrieved automatically before the bot replies.
             </p>
             <p className="text-xs mt-3 text-brand-500">
               Tip: mention <code className="bg-gray-100 px-1 rounded">@bot</code> in a channel for a short FAQ-style reply.
